@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R&D 지원기관 링크 대시보드 | R&D Agency Link Dashboard</title>
+<meta name="description" content="KEIT · TIPA · KIAT 주요 공고 및 자료 페이지 바로가기">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#111826; --card:#161d2b; --card2:#1c2434;
+    --line:#252e40; --txt:#e6edf6; --sub:#8b97ad; --dim:#5f6b80;
+    --accent:#4f8cff; --accent2:#22d3a7;
+    --keit:#4f8cff; --tipa:#22d3a7; --kiat:#f0883e;
+    --notice:#4f8cff; --doc:#8b7bff; --info:#5f6b80;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f6fb; --bg2:#ffffff; --card:#ffffff; --card2:#f7f9fd;
+      --line:#e3e8f0; --txt:#141b2b; --sub:#5b667a; --dim:#8792a6;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt); min-height:100vh;
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(900px 500px at 12% -10%, rgba(79,140,255,.13), transparent 60%),
+                     radial-gradient(800px 500px at 92% 0%, rgba(34,211,167,.10), transparent 55%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 20px 60px}
+
+  /* ---------- Header ---------- */
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  h1 span{display:block;font-size:13px;font-weight:500;color:var(--sub);letter-spacing:.2px;margin-top:4px}
+  .updated{font-size:12px;color:var(--dim);text-align:right}
+  .updated b{color:var(--sub);font-weight:600}
+
+  /* ---------- Controls ---------- */
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+  .search{position:relative;flex:1;min-width:260px}
+  .search input{
+    width:100%;padding:13px 44px 13px 42px;border-radius:11px;border:1px solid var(--line);
+    background:var(--card);color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:.15s;
+  }
+  .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.15)}
+  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.45}
+  .search kbd{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);
+    border:1px solid var(--line);border-radius:5px;padding:2px 6px;background:var(--bg2);font-family:inherit;
+  }
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{
+    padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);
+    color:var(--sub);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;
+  }
+  .chip:hover{color:var(--txt);border-color:var(--dim)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* ---------- Quick access ---------- */
+  .quick{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;margin-bottom:26px;
+  }
+  .quick-h{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.6px;margin-bottom:12px;text-transform:uppercase}
+  .quick-list{display:flex;gap:9px;flex-wrap:wrap}
+  .qbtn{
+    display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;
+    background:var(--card2);border:1px solid var(--line);color:var(--txt);
+    text-decoration:none;font-size:13px;font-weight:600;transition:.15s;
+  }
+  .qbtn:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .dot{width:7px;height:7px;border-radius:50%;flex:none}
+
+  /* ---------- Grid & Cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:20px;align-items:start}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;transition:.2s;
+  }
+  .card:hover{border-color:var(--dim)}
+  .bar{height:3px}
+  .card-h{padding:20px 20px 16px;border-bottom:1px solid var(--line)}
+  .code{font-size:19px;font-weight:800;letter-spacing:.4px}
+  .kr{font-size:14px;font-weight:600;margin-top:3px}
+  .en{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.4}
+  .home{
+    display:inline-flex;align-items:center;gap:6px;margin-top:13px;padding:7px 13px;
+    border-radius:8px;background:var(--card2);border:1px solid var(--line);
+    color:var(--txt);text-decoration:none;font-size:12.5px;font-weight:600;transition:.15s;
+  }
+  .home:hover{border-color:var(--accent);color:var(--accent)}
+  .card-b{padding:8px 12px 14px}
+
+  .group{margin-top:10px}
+  .group-h{padding:9px 8px 7px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .group-n{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.3px}
+  .group-d{font-size:10.5px;color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .item{
+    display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;
+    text-decoration:none;color:inherit;transition:.13s;
+  }
+  .item:hover{background:var(--card2)}
+  .item-t{flex:1;min-width:0}
+  .item-kr{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .item-en{font-size:11px;color:var(--dim);margin-top:1px}
+  .tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;letter-spacing:.3px;flex:none}
+  .t-notice{background:rgba(79,140,255,.15);color:var(--notice)}
+  .t-doc{background:rgba(139,123,255,.15);color:var(--doc)}
+  .t-info{background:rgba(139,151,173,.14);color:var(--sub)}
+  .copy{
+    flex:none;width:28px;height:28px;border-radius:7px;border:1px solid transparent;background:none;
+    color:var(--dim);cursor:pointer;display:grid;place-items:center;opacity:0;transition:.13s;
+  }
+  .item:hover .copy{opacity:1}
+  .copy:hover{border-color:var(--line);color:var(--accent);background:var(--bg2)}
+  .copy.ok{color:var(--accent2);opacity:1}
+  .arrow{flex:none;opacity:.3}
+  .item:hover .arrow{opacity:.75}
+
+  .empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--dim);font-size:14px}
+  footer{margin-top:40px;padding-top:22px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);line-height:1.8}
+  @media(max-width:520px){.wrap{padding:22px 14px 44px}h1{font-size:21px}.copy{opacity:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>R&amp;D 지원기관 링크 대시보드
+      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT</span>
+    </h1>
+    <div class="updated">최종 확인 <b>2026-08</b><br>Last verified</div>
+  </header>
+
+  <div class="controls">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="검색 / Search — 공고, 서식, 매뉴얼, notice…" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip on" data-f="all">전체 All</button>
+      <button class="chip" data-f="KEIT">KEIT</button>
+      <button class="chip" data-f="TIPA">TIPA</button>
+      <button class="chip" data-f="KIAT">KIAT</button>
+      <button class="chip" data-f="notice">공고 Notices</button>
+      <button class="chip" data-f="doc">서식·자료 Docs</button>
+    </div>
+  </div>
+
+  <section class="quick">
+    <div class="quick-h">⚡ 자주 쓰는 공고 · Frequently Used</div>
+    <div class="quick-list" id="quick"></div>
+  </section>
+
+  <main class="grid" id="grid"></main>
+
+  <footer>
+    본 페이지는 각 기관 공식 웹사이트로 연결되는 링크 모음입니다. 기관 사정에 따라 URL이 변경될 수 있으며, 접속되지 않을 경우 각 기관 홈페이지에서 재확인하시기 바랍니다.<br>
+    This page contains links to official agency websites. URLs may change without notice; please verify on each agency's homepage if a link fails.
+  </footer>
+</div>
+
+<script>
+/* ===== 데이터: URL 변경 시 이 배열만 수정하세요 / Edit this array only ===== */
+const AGENCIES = [
+  {
+    code:"KEIT", color:"var(--keit)",
+    kr:"한국산업기술기획평가원",
+    en:"Korea Planning &amp; Evaluation Institute of Industrial Technology",
+    home:"https://www.keit.re.kr/main/",
+    groups:[
+      { name:"기관 안내 · General", domain:"keit.re.kr", items:[
+        {kr:"업무안내", en:"Services &amp; Functions", url:"https://www.keit.re.kr/menu.es?mid=a10108000000", tag:"info"}
+      ]},
+      { name:"SROME · 산업기술 R&amp;D 연구자 지원 시스템", domain:"srome.keit.re.kr", items:[
+        {kr:"시스템 바로가기", en:"SROME Portal", url:"https://srome.keit.re.kr/srome/sromeIndex.do", tag:"info"},
+        {kr:"과제공고", en:"Project Announcements", url:"https://srome.keit.re.kr/srome/biz/perform/opnnPrpsl/retrieveTaskAnncmListView.do?prgmId=XPG201040000", tag:"notice", quick:true},
+        {kr:"수요조사", en:"Demand Survey", url:"https://srome.keit.re.kr/srome/biz/perform/opnnPrpsl/retrieveDmndSrvyLstView.do?prgmId=XPG201010000", tag:"notice"},
+        {kr:"매뉴얼", en:"User Manuals", url:"https://srome.keit.re.kr/srome/biz/cltSup/rgltData/retrieveUserMnlListView.do?prgmId=XPG502030000", tag:"doc"},
+        {kr:"표준서식", en:"Standard Forms", url:"https://srome.keit.re.kr/srome/biz/cltSup/rgltData/retrieveStndrFormListView.do?prgmId=XPG502020000", tag:"doc", quick:true}
+      ]}
+    ]
+  },
+  {
+    code:"TIPA", color:"var(--tipa)",
+    kr:"중소기업기술정보진흥원",
+    en:"Korea Technology and Information Promotion Agency for SMEs",
+    home:"https://www.tipa.or.kr/",
+    groups:[
+      { name:"SMTECH · 기술개발사업 종합관리", domain:"smtech.go.kr", items:[
+        {kr:"R&amp;D 사업소개", en:"R&amp;D Program Overview", url:"https://www.smtech.go.kr/front/sig/st/prjtIntro.do", tag:"info"},
+        {kr:"R&amp;D 사업공고", en:"R&amp;D Announcements", url:"https://www.smtech.go.kr/front/ifg/no/notice02_intro.do", tag:"notice", quick:true}
+      ]},
+      { name:"스마트공장 지원사업 · Smart Factory", domain:"smart-factory.kr", items:[
+        {kr:"지원사업소개", en:"Program Introduction", url:"https://www.smart-factory.kr/usr/bg/si/ma/sprtBizItdc", tag:"info"},
+        {kr:"사업공고", en:"Business Announcements", url:"https://www.smart-factory.kr/usr/bg/ba/ma/bsnsPbanc", tag:"notice"},
+        {kr:"모집공고", en:"Recruitment Notices", url:"https://www.smart-factory.kr/usr/bg/ra/ma/rcrtPbanc", tag:"notice"}
+      ]}
+    ]
+  },
+  {
+    code:"KIAT", color:"var(--kiat)",
+    kr:"한국산업기술진흥원",
+    en:"Korea Institute for Advancement of Technology",
+    home:"https://www.kiat.or.kr/front/user/main.do",
+    groups:[
+      { name:"기관 안내 · General", domain:"kiat.or.kr", items:[
+        {kr:"주요기능", en:"Key Functions", url:"https://www.kiat.or.kr/front/intropage/intropageShow.do?page_id=736939dbedf7451aa70eb062391eca13&MenuId=935df795fb5e49f3b6d0d56aa3e5ac31", tag:"info"}
+      ]},
+      { name:"사업 정보 · Programs", domain:"kiat.or.kr", items:[
+        {kr:"사업공고", en:"Business Announcements", url:"https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=90&MenuId=b159c9dac684471b87256f1e25404f5e", tag:"notice", quick:true},
+        {kr:"사업안내", en:"Program Guide", url:"https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=81&MenuId=5b1f360bd3544901a0df8fc28970d36b", tag:"info"}
+      ]}
+    ]
+  }
+];
+
+const TAGLABEL = { notice:"공고 NOTICE", doc:"자료 DOC", info:"안내 INFO" };
+const ICON_OUT  = '<svg class="arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
+const ICON_COPY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h8"/></svg>';
+const ICON_OK   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+/* ---------- Render ---------- */
+const grid = document.getElementById('grid');
+grid.innerHTML = AGENCIES.map(a => `
+  <article class="card" data-agency="${a.code}">
+    <div class="bar" style="background:${a.color}"></div>
+    <div class="card-h">
+      <div class="code" style="color:${a.color}">${a.code}</div>
+      <div class="kr">${a.kr}</div>
+      <div class="en">${a.en}</div>
+      <a class="home" href="${a.home}" target="_blank" rel="noopener noreferrer">홈페이지 Homepage ${ICON_OUT}</a>
+    </div>
+    <div class="card-b">
+      ${a.groups.map(g => `
+        <div class="group">
+          <div class="group-h">
+            <span class="group-n">${g.name}</span>
+            <span class="group-d">${g.domain}</span>
+          </div>
+          ${g.items.map(i => `
+            <a class="item" href="${i.url}" target="_blank" rel="noopener noreferrer"
+               data-agency="${a.code}" data-tag="${i.tag}"
+               data-key="${(a.code+' '+a.kr+' '+a.en+' '+g.name+' '+i.kr+' '+i.en+' '+i.tag).toLowerCase().replace(/&amp;/g,'&')}">
+              <span class="item-t">
+                <span class="item-kr">${i.kr}<span class="tag t-${i.tag}">${TAGLABEL[i.tag]}</span></span>
+                <span class="item-en">${i.en}</span>
+              </span>
+              <button class="copy" title="URL 복사 / Copy URL" data-url="${i.url}">${ICON_COPY}</button>
+              ${ICON_OUT}
+            </a>`).join('')}
+        </div>`).join('')}
+    </div>
+  </article>`).join('') + '<div class="empty" id="empty" hidden>검색 결과가 없습니다 · No matching links</div>';
+
+document.getElementById('quick').innerHTML = AGENCIES.flatMap(a =>
+  a.groups.flatMap(g => g.items.filter(i => i.quick).map(i => `
+    <a class="qbtn" href="${i.url}" target="_blank" rel="noopener noreferrer">
+      <span class="dot" style="background:${a.color}"></span>${a.code} ${i.kr}${ICON_OUT}
+    </a>`))).join('');
+
+/* ---------- Copy to clipboard ---------- */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.copy');
+  if(!btn) return;
+  e.preventDefault(); e.stopPropagation();
+  navigator.clipboard.writeText(btn.dataset.url).then(() => {
+    btn.innerHTML = ICON_OK; btn.classList.add('ok');
+    setTimeout(() => { btn.innerHTML = ICON_COPY; btn.classList.remove('ok'); }, 1400);
+  });
+});
+
+/* ---------- Filter & Search ---------- */
+let filter = 'all';
+const input = document.getElementById('q');
+
+function apply(){
+  const kw = input.value.trim().toLowerCase();
+  let total = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    let shown = 0;
+    card.querySelectorAll('.item').forEach(it => {
+      const okF = filter === 'all' || it.dataset.agency === filter || it.dataset.tag === filter;
+      const okQ = !kw || it.dataset.key.includes(kw);
+      const ok = okF && okQ;
+      it.style.display = ok ? '' : 'none';
+      if(ok) shown++;
+    });
+    card.querySelectorAll('.group').forEach(g => {
+      g.style.display = [...g.querySelectorAll('.item')].some(i => i.style.display !== 'none') ? '' : 'none';
+    });
+    card.style.display = shown ? '' : 'none';
+    total += shown;
+  });
+  document.getElementById('empty').hidden = total > 0;
+}
+
+document.getElementById('chips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if(!c) return;
+  document.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+  c.classList.add('on'); filter = c.dataset.f; apply();
+});
+input.addEventListener('input', apply);
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== input){ e.preventDefault(); input.focus(); }
+  if(e.key === 'Escape'){ input.value = ''; apply(); input.blur(); }
+});
+</script>
+</body>
+</html>
