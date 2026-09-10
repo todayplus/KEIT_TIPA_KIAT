@@ -1,21 +1,24 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="auto">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>R&D 지원기관 링크 대시보드 | R&D Agency Link Dashboard</title>
-<meta name="description" content="KEIT · TIPA · KIAT 주요 공고 및 자료 페이지 바로가기">
+<meta name="description" content="KEIT · TIPA · KIAT · KOITA 주요 공고 및 자료 페이지 바로가기">
 <style>
   :root{
     --bg:#0d1117; --bg2:#111826; --card:#161d2b; --card2:#1c2434;
     --line:#252e40; --txt:#e6edf6; --sub:#8b97ad; --dim:#5f6b80;
-    --accent:#4f8cff; --accent2:#22d3a7;
-    --keit:#4f8cff; --tipa:#22d3a7; --kiat:#f0883e;
+    --accent:#4f8cff; --accent2:#22d3a7; --danger:#f4585f; --warn:#f5a623;
     --notice:#4f8cff; --doc:#8b7bff; --info:#5f6b80;
     --radius:14px;
   }
+  html[data-theme="light"]{
+    --bg:#f4f6fb; --bg2:#ffffff; --card:#ffffff; --card2:#f7f9fd;
+    --line:#e3e8f0; --txt:#141b2b; --sub:#5b667a; --dim:#8792a6;
+  }
   @media (prefers-color-scheme: light){
-    :root{
+    html[data-theme="auto"]{
       --bg:#f4f6fb; --bg2:#ffffff; --card:#ffffff; --card2:#f7f9fd;
       --line:#e3e8f0; --txt:#141b2b; --sub:#5b667a; --dim:#8792a6;
     }
@@ -31,22 +34,38 @@
   }
   .wrap{max-width:1280px;margin:0 auto;padding:32px 20px 60px}
 
-  /* ---------- Header ---------- */
-  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:18px}
   h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
   h1 span{display:block;font-size:13px;font-weight:500;color:var(--sub);letter-spacing:.2px;margin-top:4px}
   .updated{font-size:12px;color:var(--dim);text-align:right}
   .updated b{color:var(--sub);font-weight:600}
 
-  /* ---------- Controls ---------- */
-  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;
+    border:1px solid var(--line);background:var(--card);color:var(--txt);
+    font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:.15s;text-decoration:none;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.08);color:#fff}
+  .btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  .spacer{flex:1}
+  .badge-edit{
+    display:none;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;
+    background:rgba(245,166,35,.16);color:var(--warn);border:1px solid rgba(245,166,35,.35);
+  }
+  body.editing .badge-edit{display:inline-block}
+
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
   .search{position:relative;flex:1;min-width:260px}
   .search input{
     width:100%;padding:13px 44px 13px 42px;border-radius:11px;border:1px solid var(--line);
     background:var(--card);color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:.15s;
   }
   .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.15)}
-  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.45}
+  .search .sicon{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.45}
   .search kbd{
     position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);
     border:1px solid var(--line);border-radius:5px;padding:2px 6px;background:var(--bg2);font-family:inherit;
@@ -58,13 +77,15 @@
   }
   .chip:hover{color:var(--txt);border-color:var(--dim)}
   .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
-
-  /* ---------- Quick access ---------- */
-  .quick{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:16px 18px;margin-bottom:26px;
+  .chip.tagx.on{background:var(--doc);border-color:var(--doc)}
+  .sortbar{display:flex;gap:8px;align-items:center;margin-bottom:20px;font-size:12.5px;color:var(--dim);flex-wrap:wrap}
+  .sortbar select{
+    padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+    color:var(--txt);font-size:12.5px;font-family:inherit;outline:none;
   }
-  .quick-h{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.6px;margin-bottom:12px;text-transform:uppercase}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px}
+  .panel-h{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.6px;margin-bottom:12px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;gap:10px}
   .quick-list{display:flex;gap:9px;flex-wrap:wrap}
   .qbtn{
     display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;
@@ -72,17 +93,35 @@
     text-decoration:none;font-size:13px;font-weight:600;transition:.15s;
   }
   .qbtn:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .qempty{font-size:12.5px;color:var(--dim)}
   .dot{width:7px;height:7px;border-radius:50%;flex:none}
 
-  /* ---------- Grid & Cards ---------- */
+  /* deadline board */
+  .dl-list{display:flex;flex-direction:column;gap:8px}
+  .dl-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--card2);text-decoration:none;color:inherit;transition:.13s}
+  .dl-row:hover{border-color:var(--accent)}
+  .dl-name{flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dl-date{font-size:11.5px;color:var(--dim);font-family:ui-monospace,Menlo,monospace;flex:none}
+  .dday{font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;flex:none;letter-spacing:.3px}
+  .dday.soon{background:rgba(244,88,95,.16);color:var(--danger)}
+  .dday.near{background:rgba(245,166,35,.16);color:var(--warn)}
+  .dday.far{background:rgba(139,151,173,.14);color:var(--sub)}
+  .dday.past{background:rgba(139,151,173,.10);color:var(--dim)}
+
+  /* feed */
+  .feed-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+  .feed-item{display:block;padding:10px 12px;border-radius:9px;background:var(--card2);text-decoration:none;color:inherit;transition:.13s;border:1px solid transparent}
+  .feed-item:hover{border-color:var(--accent)}
+  .feed-t{font-size:12.5px;font-weight:600;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .feed-m{font-size:10.5px;color:var(--dim);margin-top:5px;display:flex;gap:8px}
+
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:20px;align-items:start}
-  .card{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    overflow:hidden;transition:.2s;
-  }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:.2s}
   .card:hover{border-color:var(--dim)}
+  .card.dragging{opacity:.4}
+  .card.over{border-color:var(--accent);box-shadow:0 0 0 2px rgba(79,140,255,.25)}
   .bar{height:3px}
-  .card-h{padding:20px 20px 16px;border-bottom:1px solid var(--line)}
+  .card-h{padding:20px 20px 16px;border-bottom:1px solid var(--line);position:relative}
   .code{font-size:19px;font-weight:800;letter-spacing:.4px}
   .kr{font-size:14px;font-weight:600;margin-top:3px}
   .en{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.4}
@@ -93,6 +132,10 @@
   }
   .home:hover{border-color:var(--accent);color:var(--accent)}
   .card-b{padding:8px 12px 14px}
+  .card-tools{position:absolute;top:14px;right:14px;display:none;gap:6px;align-items:center}
+  body.editing .card-tools{display:flex}
+  .drag{cursor:grab;color:var(--dim);padding:4px}
+  .drag:active{cursor:grabbing}
 
   .group{margin-top:10px}
   .group-h{padding:9px 8px 7px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
@@ -100,30 +143,83 @@
   .group-d{font-size:10.5px;color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 
   .item{
-    display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;
+    display:flex;align-items:center;gap:10px;padding:10px;border-radius:9px;
     text-decoration:none;color:inherit;transition:.13s;
   }
   .item:hover{background:var(--card2)}
+  .item.dragging{opacity:.4}
+  .item.over{box-shadow:inset 0 2px 0 var(--accent)}
   .item-t{flex:1;min-width:0}
-  .item-kr{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .item-kr{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .item-en{font-size:11px;color:var(--dim);margin-top:1px}
+  .item-memo{font-size:11px;color:var(--sub);margin-top:4px;padding-left:9px;border-left:2px solid var(--line);line-height:1.45;white-space:pre-wrap}
+  .utags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+  .utag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--sub)}
   .tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;letter-spacing:.3px;flex:none}
   .t-notice{background:rgba(79,140,255,.15);color:var(--notice)}
   .t-doc{background:rgba(139,123,255,.15);color:var(--doc)}
   .t-info{background:rgba(139,151,173,.14);color:var(--sub)}
-  .copy{
+  .t-dead{background:rgba(244,88,95,.15);color:var(--danger)}
+  .hits{font-size:10px;color:var(--dim);font-family:ui-monospace,Menlo,monospace;flex:none}
+  .iconbtn{
     flex:none;width:28px;height:28px;border-radius:7px;border:1px solid transparent;background:none;
     color:var(--dim);cursor:pointer;display:grid;place-items:center;opacity:0;transition:.13s;
   }
-  .item:hover .copy{opacity:1}
-  .copy:hover{border-color:var(--line);color:var(--accent);background:var(--bg2)}
-  .copy.ok{color:var(--accent2);opacity:1}
+  .item:hover .iconbtn{opacity:.85}
+  .iconbtn:hover{border-color:var(--line);color:var(--accent);background:var(--bg2)}
+  .iconbtn.ok{color:var(--accent2);opacity:1}
+  .iconbtn.del:hover{color:var(--danger)}
+  .star{opacity:.28}
+  .star.on{opacity:1;color:#f5c451}
+  .item:hover .star{opacity:1}
+  .edit-only{display:none}
+  body.editing .edit-only{display:grid}
+  body.editing .iconbtn{opacity:.75}
   .arrow{flex:none;opacity:.3}
   .item:hover .arrow{opacity:.75}
+  .dead .item-kr{text-decoration:line-through;opacity:.6}
+
+  .add-row{display:none;margin:6px 8px 0}
+  body.editing .add-row{display:block}
+  .add-row button{
+    width:100%;padding:8px;border-radius:8px;border:1px dashed var(--line);background:none;
+    color:var(--dim);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:.15s;
+  }
+  .add-row button:hover{border-color:var(--accent);color:var(--accent)}
 
   .empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--dim);font-size:14px}
   footer{margin-top:40px;padding-top:22px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);line-height:1.8}
-  @media(max-width:520px){.wrap{padding:22px 14px 44px}h1{font-size:21px}.copy{opacity:1}}
+
+  .mask{position:fixed;inset:0;background:rgba(4,8,16,.62);backdrop-filter:blur(3px);display:none;place-items:center;padding:20px;z-index:50}
+  .mask.on{display:grid}
+  .modal{width:100%;max-width:560px;max-height:88vh;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:24px}
+  .modal h3{font-size:16px;font-weight:800;margin-bottom:6px}
+  .modal .sub{font-size:12px;color:var(--dim);margin-bottom:16px;line-height:1.6}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--sub);margin-bottom:5px;letter-spacing:.3px}
+  .field input,.field select,.field textarea{
+    width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--line);
+    background:var(--card);color:var(--txt);font-size:13.5px;font-family:inherit;outline:none;
+  }
+  .field textarea{min-height:80px;resize:vertical}
+  .field textarea.mono{min-height:150px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+  .field .hint{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+  .check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:600}
+  .check input{width:auto}
+  .kv{font-size:12px;color:var(--sub);line-height:1.8}
+
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+    background:var(--card);border:1px solid var(--line);color:var(--txt);padding:11px 18px;border-radius:10px;
+    font-size:13px;font-weight:600;transition:.2s;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:90vw;text-align:center;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  @media(max-width:520px){.wrap{padding:22px 14px 44px}h1{font-size:21px}.iconbtn{opacity:.7}.row2{grid-template-columns:1fr}}
+  @media print{.toolbar,.controls,.sortbar,.card-tools,.add-row,.iconbtn,.mask,.toast{display:none!important}body{background:#fff}}
 </style>
 </head>
 <body>
@@ -131,83 +227,109 @@
 
   <header>
     <h1>R&amp;D 지원기관 링크 대시보드
-      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT</span>
+      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT · KOITA</span>
     </h1>
-    <div class="updated">최종 확인 <b>2026-08</b><br>Last verified</div>
+    <div class="updated">최종 확인 <b id="verified">—</b><br>Last verified</div>
   </header>
+
+  <div class="toolbar">
+    <button class="btn" id="editToggle">✏️ 편집 모드</button>
+    <span class="badge-edit">편집 중 — 드래그로 순서 변경 · 자동 저장</span>
+    <span class="spacer"></span>
+    <button class="btn sm" id="addAgency" style="display:none">+ 기관</button>
+    <button class="btn sm" id="themeBtn" title="테마 전환">🌗 자동</button>
+    <button class="btn sm" id="shareBtn">🔗 공유 링크</button>
+    <button class="btn sm" id="exportBtn">⬇ 내보내기</button>
+    <button class="btn sm" id="importBtn">⬆ 가져오기</button>
+    <button class="btn sm" id="checkBtn">🩺 링크 점검</button>
+    <button class="btn sm" id="feedBtn">📰 공고 새로고침</button>
+    <button class="btn sm" id="settingsBtn">⚙️ 설정</button>
+    <button class="btn sm danger" id="resetBtn">↺ 초기화</button>
+  </div>
 
   <div class="controls">
     <div class="search">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="검색 / Search — 공고, 서식, 매뉴얼, notice…" autocomplete="off">
+      <svg class="sicon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="검색 / Search — 공고, 서식, 매뉴얼, 메모, 태그…" autocomplete="off">
       <kbd>/</kbd>
     </div>
-    <div class="chips" id="chips">
-      <button class="chip on" data-f="all">전체 All</button>
-      <button class="chip" data-f="KEIT">KEIT</button>
-      <button class="chip" data-f="TIPA">TIPA</button>
-      <button class="chip" data-f="KIAT">KIAT</button>
-      <button class="chip" data-f="notice">공고 Notices</button>
-      <button class="chip" data-f="doc">서식·자료 Docs</button>
-    </div>
+    <div class="chips" id="chips"></div>
   </div>
 
-  <section class="quick">
-    <div class="quick-h">⚡ 자주 쓰는 공고 · Frequently Used</div>
+  <div class="sortbar">
+    <label for="sort">정렬</label>
+    <select id="sort">
+      <option value="manual">직접 지정 순서</option>
+      <option value="hits">최근 많이 클릭한 순</option>
+      <option value="recent">최근 클릭한 순</option>
+      <option value="deadline">마감 임박 순</option>
+      <option value="name">이름순</option>
+    </select>
+    <span id="stat"></span>
+  </div>
+
+  <section class="panel" id="dlPanel" hidden>
+    <div class="panel-h"><span>⏰ 마감 임박 · Deadlines</span><span id="dlCount"></span></div>
+    <div class="dl-list" id="dlList"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><span>⭐ 즐겨찾기 · Favorites</span></div>
     <div class="quick-list" id="quick"></div>
+  </section>
+
+  <section class="panel" id="feedPanel" hidden>
+    <div class="panel-h"><span>📰 최신 공고 · Latest Notices</span><span id="feedMeta"></span></div>
+    <div class="feed-list" id="feedList"></div>
   </section>
 
   <main class="grid" id="grid"></main>
 
   <footer>
-    본 페이지는 각 기관 공식 웹사이트로 연결되는 링크 모음입니다. 기관 사정에 따라 URL이 변경될 수 있으며, 접속되지 않을 경우 각 기관 홈페이지에서 재확인하시기 바랍니다.<br>
-    This page contains links to official agency websites. URLs may change without notice; please verify on each agency's homepage if a link fails.
+    본 페이지는 각 기관 공식 웹사이트로 연결되는 링크 모음입니다. 기관 사정에 따라 URL이 변경될 수 있으며, 접속되지 않을 경우 각 기관 홈페이지에서 재확인하시기 바랍니다. 편집 내용·메모·클릭 기록은 이 브라우저(localStorage)에만 저장됩니다. 공유·백업은 <b>내보내기</b> 또는 <b>공유 링크</b>를 사용하세요.<br>
+    Edits, memos and click stats are stored in this browser only. Use <b>Export</b> or <b>Share link</b> to back up or share.
   </footer>
 </div>
 
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
 <script>
-/* ===== 데이터: URL 변경 시 이 배열만 수정하세요 / Edit this array only ===== */
-const AGENCIES = [
-  {
-    code:"KEIT", color:"var(--keit)",
-    kr:"한국산업기술기획평가원",
-    en:"Korea Planning &amp; Evaluation Institute of Industrial Technology",
+/* ============ 기본 데이터 ============ */
+const DEFAULT_DATA = [
+  { code:"KEIT", color:"#4f8cff", kr:"한국산업기술기획평가원",
+    en:"Korea Planning & Evaluation Institute of Industrial Technology",
     home:"https://www.keit.re.kr/main/",
+    feed:"",
     groups:[
       { name:"기관 안내 · General", domain:"keit.re.kr", items:[
-        {kr:"업무안내", en:"Services &amp; Functions", url:"https://www.keit.re.kr/menu.es?mid=a10108000000", tag:"info"}
+        {kr:"업무안내", en:"Services & Functions", url:"https://www.keit.re.kr/menu.es?mid=a10108000000", tag:"info"}
       ]},
-      { name:"SROME · 산업기술 R&amp;D 연구자 지원 시스템", domain:"srome.keit.re.kr", items:[
+      { name:"SROME · 산업기술 R&D 연구자 지원 시스템", domain:"srome.keit.re.kr", items:[
         {kr:"시스템 바로가기", en:"SROME Portal", url:"https://srome.keit.re.kr/srome/sromeIndex.do", tag:"info"},
         {kr:"과제공고", en:"Project Announcements", url:"https://srome.keit.re.kr/srome/biz/perform/opnnPrpsl/retrieveTaskAnncmListView.do?prgmId=XPG201040000", tag:"notice", quick:true},
         {kr:"수요조사", en:"Demand Survey", url:"https://srome.keit.re.kr/srome/biz/perform/opnnPrpsl/retrieveDmndSrvyLstView.do?prgmId=XPG201010000", tag:"notice"},
         {kr:"매뉴얼", en:"User Manuals", url:"https://srome.keit.re.kr/srome/biz/cltSup/rgltData/retrieveUserMnlListView.do?prgmId=XPG502030000", tag:"doc"},
         {kr:"표준서식", en:"Standard Forms", url:"https://srome.keit.re.kr/srome/biz/cltSup/rgltData/retrieveStndrFormListView.do?prgmId=XPG502020000", tag:"doc", quick:true}
       ]}
-    ]
-  },
-  {
-    code:"TIPA", color:"var(--tipa)",
-    kr:"중소기업기술정보진흥원",
+    ]},
+  { code:"TIPA", color:"#22d3a7", kr:"중소기업기술정보진흥원",
     en:"Korea Technology and Information Promotion Agency for SMEs",
-    home:"https://www.tipa.or.kr/",
+    home:"https://www.tipa.or.kr/", feed:"",
     groups:[
       { name:"SMTECH · 기술개발사업 종합관리", domain:"smtech.go.kr", items:[
-        {kr:"R&amp;D 사업소개", en:"R&amp;D Program Overview", url:"https://www.smtech.go.kr/front/sig/st/prjtIntro.do", tag:"info"},
-        {kr:"R&amp;D 사업공고", en:"R&amp;D Announcements", url:"https://www.smtech.go.kr/front/ifg/no/notice02_intro.do", tag:"notice", quick:true}
+        {kr:"R&D 사업소개", en:"R&D Program Overview", url:"https://www.smtech.go.kr/front/sig/st/prjtIntro.do", tag:"info"},
+        {kr:"R&D 사업공고", en:"R&D Announcements", url:"https://www.smtech.go.kr/front/ifg/no/notice02_intro.do", tag:"notice", quick:true}
       ]},
       { name:"스마트공장 지원사업 · Smart Factory", domain:"smart-factory.kr", items:[
         {kr:"지원사업소개", en:"Program Introduction", url:"https://www.smart-factory.kr/usr/bg/si/ma/sprtBizItdc", tag:"info"},
         {kr:"사업공고", en:"Business Announcements", url:"https://www.smart-factory.kr/usr/bg/ba/ma/bsnsPbanc", tag:"notice"},
         {kr:"모집공고", en:"Recruitment Notices", url:"https://www.smart-factory.kr/usr/bg/ra/ma/rcrtPbanc", tag:"notice"}
       ]}
-    ]
-  },
-  {
-    code:"KIAT", color:"var(--kiat)",
-    kr:"한국산업기술진흥원",
+    ]},
+  { code:"KIAT", color:"#f0883e", kr:"한국산업기술진흥원",
     en:"Korea Institute for Advancement of Technology",
-    home:"https://www.kiat.or.kr/front/user/main.do",
+    home:"https://www.kiat.or.kr/front/user/main.do", feed:"",
     groups:[
       { name:"기관 안내 · General", domain:"kiat.or.kr", items:[
         {kr:"주요기능", en:"Key Functions", url:"https://www.kiat.or.kr/front/intropage/intropageShow.do?page_id=736939dbedf7451aa70eb062391eca13&MenuId=935df795fb5e49f3b6d0d56aa3e5ac31", tag:"info"}
@@ -216,100 +338,647 @@ const AGENCIES = [
         {kr:"사업공고", en:"Business Announcements", url:"https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=90&MenuId=b159c9dac684471b87256f1e25404f5e", tag:"notice", quick:true},
         {kr:"사업안내", en:"Program Guide", url:"https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=81&MenuId=5b1f360bd3544901a0df8fc28970d36b", tag:"info"}
       ]}
-    ]
-  }
+    ]},
+  { code:"KOITA", color:"#e05fc4", kr:"한국산업기술진흥협회",
+    en:"Korea Industrial Technology Association",
+    home:"https://www.koita.or.kr/", feed:"",
+    groups:[
+      { name:"국가R&D 정보 · Gov R&D", domain:"koita.or.kr", items:[
+        {kr:"국가R&D 사업공고", en:"Government R&D Announcements", url:"https://www.koita.or.kr/board/commBoardGovRnDList.do", tag:"notice", quick:true}
+      ]}
+    ]}
 ];
+const DEFAULT_CFG = { proxy:"", theme:"auto", sort:"manual", verified:"" };
 
 const TAGLABEL = { notice:"공고 NOTICE", doc:"자료 DOC", info:"안내 INFO" };
-const ICON_OUT  = '<svg class="arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
-const ICON_COPY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h8"/></svg>';
-const ICON_OK   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+const K_DATA='rnd-dash-v3-data', K_CFG='rnd-dash-v3-cfg', K_HITS='rnd-dash-v3-hits', K_FEED='rnd-dash-v3-feed';
 
-/* ---------- Render ---------- */
-const grid = document.getElementById('grid');
-grid.innerHTML = AGENCIES.map(a => `
-  <article class="card" data-agency="${a.code}">
-    <div class="bar" style="background:${a.color}"></div>
-    <div class="card-h">
-      <div class="code" style="color:${a.color}">${a.code}</div>
-      <div class="kr">${a.kr}</div>
-      <div class="en">${a.en}</div>
-      <a class="home" href="${a.home}" target="_blank" rel="noopener noreferrer">홈페이지 Homepage ${ICON_OUT}</a>
-    </div>
-    <div class="card-b">
-      ${a.groups.map(g => `
-        <div class="group">
-          <div class="group-h">
-            <span class="group-n">${g.name}</span>
-            <span class="group-d">${g.domain}</span>
-          </div>
-          ${g.items.map(i => `
-            <a class="item" href="${i.url}" target="_blank" rel="noopener noreferrer"
-               data-agency="${a.code}" data-tag="${i.tag}"
-               data-key="${(a.code+' '+a.kr+' '+a.en+' '+g.name+' '+i.kr+' '+i.en+' '+i.tag).toLowerCase().replace(/&amp;/g,'&')}">
-              <span class="item-t">
-                <span class="item-kr">${i.kr}<span class="tag t-${i.tag}">${TAGLABEL[i.tag]}</span></span>
-                <span class="item-en">${i.en}</span>
-              </span>
-              <button class="copy" title="URL 복사 / Copy URL" data-url="${i.url}">${ICON_COPY}</button>
-              ${ICON_OUT}
-            </a>`).join('')}
-        </div>`).join('')}
-    </div>
-  </article>`).join('') + '<div class="empty" id="empty" hidden>검색 결과가 없습니다 · No matching links</div>';
+const I = {
+  out:'<svg class="arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>',
+  copy:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h8"/></svg>',
+  ok:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  edit:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 00-3-3L5 17v3z"/></svg>',
+  del:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>',
+  star:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.6 19.7l1.2-6.1L3.3 9.4l6.1-.8z"/></svg>',
+  grip:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>'
+};
 
-document.getElementById('quick').innerHTML = AGENCIES.flatMap(a =>
-  a.groups.flatMap(g => g.items.filter(i => i.quick).map(i => `
-    <a class="qbtn" href="${i.url}" target="_blank" rel="noopener noreferrer">
-      <span class="dot" style="background:${a.color}"></span>${a.code} ${i.kr}${ICON_OUT}
-    </a>`))).join('');
+/* ============ State ============ */
+let DATA, CFG, HITS, FEED;
+let filter='all', tagFilter='', editing=false;
 
-/* ---------- Copy to clipboard ---------- */
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.copy');
-  if(!btn) return;
-  e.preventDefault(); e.stopPropagation();
-  navigator.clipboard.writeText(btn.dataset.url).then(() => {
-    btn.innerHTML = ICON_OK; btn.classList.add('ok');
-    setTimeout(() => { btn.innerHTML = ICON_COPY; btn.classList.remove('ok'); }, 1400);
-  });
-});
+const j = (k,f) => { try{ const r=localStorage.getItem(k); return r?JSON.parse(r):structuredClone(f); }catch(e){ return structuredClone(f); } };
+const put = (k,v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ toast('브라우저 저장 공간이 부족합니다'); } };
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const save = () => put(K_DATA, DATA);
+const saveCfg = () => put(K_CFG, CFG);
 
-/* ---------- Filter & Search ---------- */
-let filter = 'all';
-const input = document.getElementById('q');
-
-function apply(){
-  const kw = input.value.trim().toLowerCase();
-  let total = 0;
-  document.querySelectorAll('.card').forEach(card => {
-    let shown = 0;
-    card.querySelectorAll('.item').forEach(it => {
-      const okF = filter === 'all' || it.dataset.agency === filter || it.dataset.tag === filter;
-      const okQ = !kw || it.dataset.key.includes(kw);
-      const ok = okF && okQ;
-      it.style.display = ok ? '' : 'none';
-      if(ok) shown++;
-    });
-    card.querySelectorAll('.group').forEach(g => {
-      g.style.display = [...g.querySelectorAll('.item')].some(i => i.style.display !== 'none') ? '' : 'none';
-    });
-    card.style.display = shown ? '' : 'none';
-    total += shown;
-  });
-  document.getElementById('empty').hidden = total > 0;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2600);
 }
 
-document.getElementById('chips').addEventListener('click', e => {
-  const c = e.target.closest('.chip'); if(!c) return;
-  document.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
-  c.classList.add('on'); filter = c.dataset.f; apply();
+/* ---- 아이템 고유 키 (클릭 통계용) ---- */
+const keyOf = i => i.url;
+const hitOf = i => HITS[keyOf(i)] || {n:0,last:0};
+
+/* ---- D-day ---- */
+function dday(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T23:59:59');
+  if(isNaN(d)) return null;
+  const diff = Math.ceil((d - new Date())/86400000);
+  return diff;
+}
+function ddayLabel(n){
+  if(n===null) return '';
+  if(n < 0) return `마감 D+${-n}`;
+  if(n === 0) return 'D-DAY';
+  return `D-${n}`;
+}
+function ddayClass(n){
+  if(n===null) return '';
+  if(n < 0) return 'past';
+  if(n <= 3) return 'soon';
+  if(n <= 14) return 'near';
+  return 'far';
+}
+
+/* ============ Boot ============ */
+function boot(){
+  const hash = location.hash;
+  DATA = j(K_DATA, DEFAULT_DATA);
+  CFG  = Object.assign(structuredClone(DEFAULT_CFG), j(K_CFG, DEFAULT_CFG));
+  HITS = j(K_HITS, {});
+  FEED = j(K_FEED, {items:[], at:0});
+  applyTheme();
+  document.getElementById('sort').value = CFG.sort || 'manual';
+  if(hash.startsWith('#d=')){
+    decodeShare(hash.slice(3)).then(d => {
+      if(d && confirm('공유된 링크 목록을 불러올까요? 현재 목록은 대체됩니다. (취소하면 내 목록 유지)')){
+        DATA = d; save(); toast('공유 목록을 불러왔습니다');
+      }
+      history.replaceState(null,'',location.pathname+location.search);
+      render();
+    }).catch(()=>{ toast('공유 링크를 해석하지 못했습니다'); render(); });
+  } else render();
+}
+
+/* ============ Render ============ */
+function allItems(){
+  const out=[];
+  DATA.forEach((a,ai)=>(a.groups||[]).forEach((g,gi)=>(g.items||[]).forEach((i,ii)=>out.push({a,g,i,ai,gi,ii}))));
+  return out;
+}
+
+function sortItems(items){
+  const s = CFG.sort;
+  if(s==='manual') return items;
+  const c=[...items];
+  if(s==='hits')     c.sort((x,y)=>hitOf(y.i).n - hitOf(x.i).n);
+  if(s==='recent')   c.sort((x,y)=>hitOf(y.i).last - hitOf(x.i).last);
+  if(s==='name')     c.sort((x,y)=>x.i.kr.localeCompare(y.i.kr,'ko'));
+  if(s==='deadline') c.sort((x,y)=>{
+    const dx=dday(x.i.due), dy=dday(y.i.due);
+    if(dx===null&&dy===null) return 0;
+    if(dx===null) return 1; if(dy===null) return -1;
+    return dx-dy;
+  });
+  return c;
+}
+
+function itemHTML(ref){
+  const {a,i,ai,gi,ii}=ref;
+  const d = dday(i.due), h = hitOf(i);
+  return `<a class="item ${i.dead?'dead':''}" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer"
+     data-agency="${esc(a.code)}" data-tag="${esc(i.tag)}" data-ai="${ai}" data-gi="${gi}" data-ii="${ii}"
+     draggable="false"
+     data-key="${esc((a.code+' '+a.kr+' '+a.en+' '+i.kr+' '+(i.en||'')+' '+i.tag+' '+i.url+' '+(i.memo||'')+' '+(i.tags||[]).join(' ')).toLowerCase())}"
+     data-utags="${esc((i.tags||[]).join('|').toLowerCase())}">
+    <span class="drag edit-only" data-act="drag-item" title="드래그로 순서 변경">${I.grip}</span>
+    <span class="item-t">
+      <span class="item-kr">${esc(i.kr)}
+        <span class="tag t-${esc(i.tag)}">${TAGLABEL[i.tag]||esc(i.tag)}</span>
+        ${d!==null?`<span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>`:''}
+        ${i.dead?'<span class="tag t-dead">확인필요</span>':''}
+      </span>
+      ${i.en?`<span class="item-en">${esc(i.en)}</span>`:''}
+      ${i.memo?`<span class="item-memo">${esc(i.memo)}</span>`:''}
+      ${(i.tags||[]).length?`<span class="utags">${i.tags.map(t=>`<span class="utag" data-act="utag" data-t="${esc(t)}">#${esc(t)}</span>`).join('')}</span>`:''}
+    </span>
+    ${h.n?`<span class="hits">${h.n}</span>`:''}
+    <button class="iconbtn star ${i.quick?'on':''}" data-act="star" title="즐겨찾기">${I.star}</button>
+    <button class="iconbtn copy" data-act="copy" title="URL 복사" data-url="${esc(i.url)}">${I.copy}</button>
+    <button class="iconbtn edit-only" data-act="edit-item" title="수정">${I.edit}</button>
+    <button class="iconbtn edit-only del" data-act="del-item" title="삭제">${I.del}</button>
+    ${I.out}
+  </a>`;
+}
+
+function render(){
+  // chips
+  const utagSet = new Set();
+  allItems().forEach(r => (r.i.tags||[]).forEach(t=>utagSet.add(t)));
+  document.getElementById('chips').innerHTML =
+    `<button class="chip${filter==='all'&&!tagFilter?' on':''}" data-f="all">전체 All</button>` +
+    DATA.map(a=>`<button class="chip${filter===a.code?' on':''}" data-f="${esc(a.code)}">${esc(a.code)}</button>`).join('') +
+    `<button class="chip${filter==='notice'?' on':''}" data-f="notice">공고</button>` +
+    `<button class="chip${filter==='doc'?' on':''}" data-f="doc">서식·자료</button>` +
+    `<button class="chip${filter==='fav'?' on':''}" data-f="fav">⭐ 즐겨찾기</button>` +
+    `<button class="chip${filter==='due'?' on':''}" data-f="due">⏰ 마감있음</button>` +
+    [...utagSet].sort().map(t=>`<button class="chip tagx${tagFilter===t?' on':''}" data-tag="${esc(t)}">#${esc(t)}</button>`).join('');
+
+  // cards
+  document.getElementById('grid').innerHTML = DATA.map((a,ai) => `
+    <article class="card" data-agency="${esc(a.code)}" data-ai="${ai}" draggable="false">
+      <div class="bar" style="background:${esc(a.color)}"></div>
+      <div class="card-h">
+        <div class="card-tools">
+          <span class="drag" data-act="drag-card" title="드래그로 카드 순서 변경">${I.grip}</span>
+          <button class="btn sm" data-act="edit-agency" data-ai="${ai}">${I.edit}</button>
+          <button class="btn sm danger" data-act="del-agency" data-ai="${ai}">${I.del}</button>
+        </div>
+        <div class="code" style="color:${esc(a.color)}">${esc(a.code)}</div>
+        <div class="kr">${esc(a.kr)}</div>
+        <div class="en">${esc(a.en||'')}</div>
+        ${a.home?`<a class="home" href="${esc(a.home)}" target="_blank" rel="noopener noreferrer">홈페이지 Homepage ${I.out}</a>`:''}
+      </div>
+      <div class="card-b">
+        ${(a.groups||[]).map((g,gi) => {
+          const refs = sortItems((g.items||[]).map((i,ii)=>({a,g,i,ai,gi,ii})));
+          return `<div class="group" data-gi="${gi}">
+            <div class="group-h">
+              <span class="group-n">${esc(g.name)}</span>
+              <span class="group-d">${esc(g.domain||'')}</span>
+            </div>
+            ${refs.map(itemHTML).join('')}
+            <div class="add-row"><button data-act="add-item" data-ai="${ai}" data-gi="${gi}">+ 링크 추가</button></div>
+          </div>`;
+        }).join('')}
+        <div class="add-row" style="margin-top:12px"><button data-act="add-group" data-ai="${ai}">+ 그룹 추가</button></div>
+      </div>
+    </article>`).join('') + '<div class="empty" id="empty" hidden>검색 결과가 없습니다 · No matching links</div>';
+
+  renderFav(); renderDeadlines(); renderFeed();
+  document.getElementById('verified').textContent = CFG.verified || new Date().toISOString().slice(0,7);
+  apply();
+}
+
+function renderFav(){
+  const favs = allItems().filter(r=>r.i.quick);
+  document.getElementById('quick').innerHTML = favs.length
+    ? favs.map(({a,i})=>`<a class="qbtn" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer" data-track="${esc(i.url)}"><span class="dot" style="background:${esc(a.color)}"></span>${esc(a.code)} ${esc(i.kr)}${I.out}</a>`).join('')
+    : '<span class="qempty">링크의 ★를 눌러 즐겨찾기에 추가하세요.</span>';
+}
+
+function renderDeadlines(){
+  const rows = allItems().filter(r=>dday(r.i.due)!==null)
+    .sort((x,y)=>dday(x.i.due)-dday(y.i.due));
+  const p = document.getElementById('dlPanel');
+  p.hidden = rows.length===0;
+  if(!rows.length) return;
+  const upcoming = rows.filter(r=>dday(r.i.due)>=0).length;
+  document.getElementById('dlCount').textContent = `진행 ${upcoming} / 전체 ${rows.length}`;
+  document.getElementById('dlList').innerHTML = rows.map(({a,i})=>{
+    const d = dday(i.due);
+    return `<a class="dl-row" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer" data-track="${esc(i.url)}">
+      <span class="dot" style="background:${esc(a.color)}"></span>
+      <span class="dl-name">${esc(a.code)} · ${esc(i.kr)}</span>
+      <span class="dl-date">${esc(i.due)}</span>
+      <span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>
+    </a>`;
+  }).join('');
+}
+
+function renderFeed(){
+  const p = document.getElementById('feedPanel');
+  if(!FEED.items || !FEED.items.length){ p.hidden = true; return; }
+  p.hidden = false;
+  document.getElementById('feedMeta').textContent = FEED.at ? new Date(FEED.at).toLocaleString('ko-KR')+' 기준' : '';
+  document.getElementById('feedList').innerHTML = FEED.items.slice(0,24).map(f=>`
+    <a class="feed-item" href="${esc(f.link)}" target="_blank" rel="noopener noreferrer">
+      <div class="feed-t">${esc(f.title)}</div>
+      <div class="feed-m"><span style="color:${esc(f.color||'var(--dim)')}">${esc(f.code||'')}</span><span>${esc(f.date||'')}</span></div>
+    </a>`).join('');
+}
+
+/* ============ Filter ============ */
+function apply(){
+  const kw = document.getElementById('q').value.trim().toLowerCase();
+  let total=0;
+  document.querySelectorAll('.card').forEach(card=>{
+    let shown=0;
+    card.querySelectorAll('.item').forEach(it=>{
+      const ai=it.dataset.ai,gi=it.dataset.gi,ii=it.dataset.ii;
+      const obj = DATA[ai].groups[gi].items[ii];
+      let okF = true;
+      if(filter==='fav') okF = !!obj.quick;
+      else if(filter==='due') okF = dday(obj.due)!==null;
+      else if(filter!=='all') okF = it.dataset.agency===filter || it.dataset.tag===filter;
+      const okT = !tagFilter || it.dataset.utags.split('|').includes(tagFilter.toLowerCase());
+      const okQ = !kw || it.dataset.key.includes(kw);
+      const ok = okF && okT && okQ;
+      it.style.display = ok?'':'none';
+      if(ok) shown++;
+    });
+    card.querySelectorAll('.group').forEach(g=>{
+      g.style.display = [...g.querySelectorAll('.item')].some(i=>i.style.display!=='none')||editing ? '' : 'none';
+    });
+    card.style.display = (shown||editing)?'':'none';
+    total+=shown;
+  });
+  const e=document.getElementById('empty'); if(e) e.hidden = total>0||editing;
+  const clicked = Object.values(HITS).reduce((s,h)=>s+h.n,0);
+  document.getElementById('stat').textContent = `· 표시 ${total}건 / 전체 ${allItems().length}건 · 누적 클릭 ${clicked}회`;
+}
+
+/* ============ Modal ============ */
+const mask=document.getElementById('mask'), modal=document.getElementById('modal');
+function openModal(html, onSubmit){
+  modal.innerHTML=html; mask.classList.add('on'); modal._submit=onSubmit;
+  const f=modal.querySelector('input,textarea,select'); if(f) f.focus();
+}
+function closeModal(){ mask.classList.remove('on'); modal.innerHTML=''; modal._submit=null; }
+mask.addEventListener('click',e=>{ if(e.target===mask) closeModal(); });
+modal.addEventListener('click',e=>{
+  if(e.target.closest('[data-x="cancel"]')) closeModal();
+  if(e.target.closest('[data-x="ok"]')&&modal._submit) modal._submit();
 });
-input.addEventListener('input', apply);
-document.addEventListener('keydown', e => {
-  if(e.key === '/' && document.activeElement !== input){ e.preventDefault(); input.focus(); }
-  if(e.key === 'Escape'){ input.value = ''; apply(); input.blur(); }
+modal.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.tagName==='INPUT'&&modal._submit){ e.preventDefault(); modal._submit(); }
 });
+const val = id => (document.getElementById(id)?.value||'').trim();
+
+function itemForm(title, it, cb){
+  openModal(`
+    <h3>${title}</h3>
+    <div class="field"><label>이름 (한글) *</label><input id="f_kr" value="${esc(it.kr||'')}" placeholder="예: 국가R&D 사업공고"></div>
+    <div class="field"><label>이름 (영문)</label><input id="f_en" value="${esc(it.en||'')}"></div>
+    <div class="field"><label>URL *</label><input id="f_url" value="${esc(it.url||'')}" placeholder="https://..."></div>
+    <div class="row2">
+      <div class="field"><label>분류</label>
+        <select id="f_tag">
+          <option value="notice"${it.tag==='notice'?' selected':''}>공고 NOTICE</option>
+          <option value="doc"${it.tag==='doc'?' selected':''}>자료 DOC</option>
+          <option value="info"${it.tag==='info'?' selected':''}>안내 INFO</option>
+        </select></div>
+      <div class="field"><label>마감일 (D-day 표시)</label><input id="f_due" type="date" value="${esc(it.due||'')}"></div>
+    </div>
+    <div class="field"><label>사용자 태그 (쉼표 구분)</label><input id="f_tags" value="${esc((it.tags||[]).join(', '))}" placeholder="예: 해당가능, 김대리, 2026상반기"><div class="hint">태그는 상단 필터 칩으로 자동 추가됩니다.</div></div>
+    <div class="field"><label>메모</label><textarea id="f_memo" placeholder="우리 회사 해당 여부, 담당자, 준비서류 등">${esc(it.memo||'')}</textarea></div>
+    <div class="field"><label class="check"><input type="checkbox" id="f_quick"${it.quick?' checked':''}> 즐겨찾기에 표시</label></div>
+    <div class="modal-actions"><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="ok">저장</button></div>`,
+  ()=>{
+    const kr=val('f_kr'), url=val('f_url');
+    if(!kr||!url) return toast('이름과 URL은 필수입니다');
+    if(!/^https?:\/\//i.test(url)) return toast('URL은 http(s):// 로 시작해야 합니다');
+    cb({kr, en:val('f_en'), url, tag:val('f_tag'), due:val('f_due'),
+        tags: val('f_tags').split(',').map(s=>s.trim()).filter(Boolean),
+        memo: document.getElementById('f_memo').value.trim(),
+        quick: document.getElementById('f_quick').checked});
+    closeModal(); save(); render();
+  });
+}
+
+function agencyForm(title, a, cb){
+  openModal(`
+    <h3>${title}</h3>
+    <div class="row2">
+      <div class="field"><label>코드 *</label><input id="f_code" value="${esc(a.code||'')}" placeholder="KOITA"></div>
+      <div class="field"><label>색상</label><input id="f_color" type="color" value="${esc(a.color||'#4f8cff')}" style="height:41px;padding:4px"></div>
+    </div>
+    <div class="field"><label>기관명 (한글) *</label><input id="f_kr" value="${esc(a.kr||'')}"></div>
+    <div class="field"><label>기관명 (영문)</label><input id="f_en" value="${esc(a.en||'')}"></div>
+    <div class="field"><label>홈페이지 URL</label><input id="f_home" value="${esc(a.home||'')}"></div>
+    <div class="field"><label>공고 RSS / JSON 피드 URL (선택)</label><input id="f_feed" value="${esc(a.feed||'')}" placeholder="https://.../rss">
+      <div class="hint">설정에 프록시를 지정하면 이 주소에서 최신 공고를 자동으로 가져옵니다.</div></div>
+    <div class="modal-actions"><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="ok">저장</button></div>`,
+  ()=>{
+    const code=val('f_code'), kr=val('f_kr');
+    if(!code||!kr) return toast('코드와 기관명은 필수입니다');
+    cb({code, kr, en:val('f_en'), home:val('f_home'), color:val('f_color'), feed:val('f_feed')});
+    closeModal(); save(); render();
+  });
+}
+
+/* ============ Grid actions ============ */
+document.getElementById('grid').addEventListener('click', e=>{
+  const t = e.target.closest('[data-act]');
+  const item = e.target.closest('.item');
+
+  if(t){
+    const act=t.dataset.act;
+    if(act==='utag'){ e.preventDefault(); e.stopPropagation(); tagFilter = tagFilter===t.dataset.t?'':t.dataset.t; filter='all'; render(); return; }
+    if(act==='copy'){
+      e.preventDefault(); e.stopPropagation();
+      navigator.clipboard.writeText(t.dataset.url).then(()=>{
+        t.innerHTML=I.ok; t.classList.add('ok');
+        setTimeout(()=>{ t.innerHTML=I.copy; t.classList.remove('ok'); },1400);
+      });
+      return;
+    }
+    if(item){
+      e.preventDefault(); e.stopPropagation();
+      const {ai,gi,ii}=item.dataset;
+      const ref=DATA[ai].groups[gi].items[ii];
+      if(act==='star'){ ref.quick=!ref.quick; save(); render(); return; }
+      if(act==='edit-item'){ itemForm('링크 수정', ref, v=>Object.assign(ref,v)); return; }
+      if(act==='del-item'){ if(confirm(`"${ref.kr}" 링크를 삭제할까요?`)){ DATA[ai].groups[gi].items.splice(ii,1); save(); render(); } return; }
+      if(act==='drag-item') return;
+    }
+    e.preventDefault(); e.stopPropagation();
+    const ai=t.dataset.ai, gi=t.dataset.gi;
+    if(act==='add-item'){ itemForm('링크 추가',{tag:'notice'}, v=>DATA[ai].groups[gi].items.push(v)); return; }
+    if(act==='add-group'){
+      const name=prompt('그룹 이름 (예: 사업 정보 · Programs)'); if(!name) return;
+      DATA[ai].groups.push({name, domain:prompt('표시할 도메인 (선택)')||'', items:[]}); save(); render(); return;
+    }
+    if(act==='edit-agency'){ agencyForm('기관 수정', DATA[ai], v=>Object.assign(DATA[ai],v)); return; }
+    if(act==='del-agency'){ if(confirm(`${DATA[ai].code} 기관과 모든 하위 링크를 삭제할까요?`)){ DATA.splice(ai,1); save(); render(); } return; }
+  }
+
+  // plain click on a link → track
+  if(item && !editing) track(item.getAttribute('href'));
+  if(item && editing) e.preventDefault();
+});
+document.addEventListener('click', e=>{
+  const t=e.target.closest('[data-track]'); if(t) track(t.dataset.track);
+});
+function track(url){
+  if(!url) return;
+  const h = HITS[url] || {n:0,last:0};
+  h.n++; h.last=Date.now(); HITS[url]=h; put(K_HITS,HITS);
+}
+
+/* ============ Drag & drop ============ */
+let dragCtx=null;
+document.getElementById('grid').addEventListener('mousedown', e=>{
+  const h=e.target.closest('[data-act="drag-item"], [data-act="drag-card"]');
+  if(!h) return;
+  const el = h.dataset.act==='drag-item' ? h.closest('.item') : h.closest('.card');
+  el.setAttribute('draggable','true');
+  el.addEventListener('dragend', ()=>el.setAttribute('draggable','false'), {once:true});
+});
+document.getElementById('grid').addEventListener('dragstart', e=>{
+  const el=e.target.closest('.item,.card'); if(!el||!editing) return e.preventDefault();
+  dragCtx = el.classList.contains('item')
+    ? {type:'item', ai:+el.dataset.ai, gi:+el.dataset.gi, ii:+el.dataset.ii}
+    : {type:'card', ai:+el.dataset.ai};
+  el.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain','x');
+});
+document.getElementById('grid').addEventListener('dragover', e=>{
+  if(!dragCtx) return;
+  const sel = dragCtx.type==='item' ? '.item' : '.card';
+  const over = e.target.closest(sel);
+  e.preventDefault();
+  document.querySelectorAll('.over').forEach(x=>x.classList.remove('over'));
+  if(over) over.classList.add('over');
+});
+document.getElementById('grid').addEventListener('drop', e=>{
+  if(!dragCtx) return;
+  e.preventDefault();
+  const sel = dragCtx.type==='item' ? '.item' : '.card';
+  const over = e.target.closest(sel);
+  document.querySelectorAll('.over,.dragging').forEach(x=>x.classList.remove('over','dragging'));
+  if(over){
+    if(dragCtx.type==='card'){
+      const to=+over.dataset.ai;
+      if(to!==dragCtx.ai){ const [m]=DATA.splice(dragCtx.ai,1); DATA.splice(to,0,m); }
+    }else{
+      const to={ai:+over.dataset.ai, gi:+over.dataset.gi, ii:+over.dataset.ii};
+      const [m]=DATA[dragCtx.ai].groups[dragCtx.gi].items.splice(dragCtx.ii,1);
+      DATA[to.ai].groups[to.gi].items.splice(to.ii,0,m);
+    }
+    if(CFG.sort!=='manual'){ CFG.sort='manual'; saveCfg(); document.getElementById('sort').value='manual'; toast('직접 지정 순서로 전환했습니다'); }
+    save(); render();
+  }
+  dragCtx=null;
+});
+
+/* ============ Controls ============ */
+document.getElementById('chips').addEventListener('click', e=>{
+  const c=e.target.closest('.chip'); if(!c) return;
+  if(c.dataset.tag !== undefined){ tagFilter = tagFilter===c.dataset.tag?'':c.dataset.tag; }
+  else { filter=c.dataset.f; tagFilter=''; }
+  render();
+});
+document.getElementById('q').addEventListener('input', apply);
+document.getElementById('sort').addEventListener('change', e=>{
+  CFG.sort=e.target.value; saveCfg(); render();
+});
+document.addEventListener('keydown', e=>{
+  const input=document.getElementById('q');
+  if(mask.classList.contains('on')){ if(e.key==='Escape') closeModal(); return; }
+  if(e.key==='/'&&document.activeElement!==input){ e.preventDefault(); input.focus(); }
+  if(e.key==='Escape'){ input.value=''; tagFilter=''; apply(); input.blur(); }
+});
+
+document.getElementById('editToggle').addEventListener('click', e=>{
+  editing=!editing;
+  document.body.classList.toggle('editing',editing);
+  e.target.textContent = editing?'✅ 편집 종료':'✏️ 편집 모드';
+  e.target.classList.toggle('primary',editing);
+  document.getElementById('addAgency').style.display = editing?'':'none';
+  apply();
+});
+document.getElementById('addAgency').addEventListener('click', ()=>{
+  agencyForm('기관 추가',{color:'#4f8cff'}, v=>DATA.push({...v, groups:[{name:'링크 · Links', domain:'', items:[]}]}));
+});
+
+/* ---- Theme ---- */
+function applyTheme(){
+  document.documentElement.dataset.theme = CFG.theme;
+  document.getElementById('themeBtn').textContent =
+    CFG.theme==='auto'?'🌗 자동':CFG.theme==='dark'?'🌙 다크':'☀️ 라이트';
+}
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  CFG.theme = CFG.theme==='auto'?'dark':CFG.theme==='dark'?'light':'auto';
+  saveCfg(); applyTheme();
+});
+
+/* ---- Export / Import ---- */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const payload = {version:3, exportedAt:new Date().toISOString(), data:DATA, hits:HITS, config:{proxy:CFG.proxy}};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`rnd-links-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href); toast('JSON 파일을 저장했습니다');
+});
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  openModal(`
+    <h3>JSON 가져오기</h3>
+    <div class="sub">내보낸 파일 또는 텍스트를 넣으세요. v2 형식(배열)도 지원합니다.</div>
+    <div class="field"><input type="file" id="f_file" accept="application/json,.json"></div>
+    <div class="field"><label>또는 붙여넣기</label><textarea id="f_json" class="mono"></textarea></div>
+    <div class="field"><label class="check"><input type="checkbox" id="f_merge"> 기존 목록에 병합 (체크 해제 시 전체 교체)</label></div>
+    <div class="modal-actions"><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="ok">불러오기</button></div>`,
+  ()=>{
+    const txt=document.getElementById('f_json').value.trim();
+    if(!txt) return toast('내용이 비어 있습니다');
+    try{
+      const p=JSON.parse(txt);
+      const arr = Array.isArray(p) ? p : p.data;
+      if(!Array.isArray(arr)) throw 0;
+      if(document.getElementById('f_merge').checked){
+        arr.forEach(na=>{
+          const ex = DATA.find(a=>a.code===na.code);
+          if(!ex) DATA.push(na);
+          else (na.groups||[]).forEach(ng=>{
+            const eg = ex.groups.find(g=>g.name===ng.name);
+            if(!eg) ex.groups.push(ng);
+            else (ng.items||[]).forEach(ni=>{ if(!eg.items.some(i=>i.url===ni.url)) eg.items.push(ni); });
+          });
+        });
+      } else DATA = arr;
+      if(p.hits) { HITS = Object.assign(HITS, p.hits); put(K_HITS,HITS); }
+      if(p.config?.proxy) { CFG.proxy=p.config.proxy; saveCfg(); }
+      save(); closeModal(); render(); toast('불러왔습니다');
+    }catch(err){ toast('JSON 형식이 올바르지 않습니다'); }
+  });
+  document.getElementById('f_file').addEventListener('change', ev=>{
+    const f=ev.target.files[0]; if(f) f.text().then(t=>document.getElementById('f_json').value=t);
+  });
+});
+
+/* ---- Share URL (compressed into #hash) ---- */
+async function encodeShare(obj){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let out = bytes;
+  if(window.CompressionStream){
+    const cs = new CompressionStream('gzip');
+    const w = cs.writable.getWriter(); w.write(bytes); w.close();
+    out = new Uint8Array(await new Response(cs.readable).arrayBuffer());
+  }
+  let bin=''; out.forEach(b=>bin+=String.fromCharCode(b));
+  return (window.CompressionStream?'g':'p') + btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function decodeShare(s){
+  const mode=s[0]; let b64=s.slice(1).replace(/-/g,'+').replace(/_/g,'/');
+  while(b64.length%4) b64+='=';
+  const bin=atob(b64); const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  if(mode==='g'){
+    const ds=new DecompressionStream('gzip');
+    const w=ds.writable.getWriter(); w.write(bytes); w.close();
+    const buf=await new Response(ds.readable).arrayBuffer();
+    return JSON.parse(new TextDecoder().decode(buf));
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+document.getElementById('shareBtn').addEventListener('click', async ()=>{
+  const token = await encodeShare(DATA);
+  const url = location.origin + location.pathname + location.search + '#d=' + token;
+  const long = url.length > 8000;
+  openModal(`
+    <h3>공유 링크</h3>
+    <div class="sub">현재 링크 목록 전체가 주소 안에 압축되어 담깁니다. 받는 사람이 이 주소로 열면 목록을 그대로 불러옵니다(불러오기 확인 후 적용). 메모·태그·마감일도 포함되니 사내 공유 시 내용을 확인하세요.</div>
+    <div class="field"><textarea id="f_url" class="mono" readonly>${esc(url)}</textarea>
+      <div class="hint">길이 ${url.length.toLocaleString()}자${long?' — 일부 메신저에서 잘릴 수 있습니다. 그럴 땐 내보내기 JSON을 쓰세요.':''}</div></div>
+    <div class="modal-actions">
+      <button class="btn" data-x="cancel">닫기</button>
+      <button class="btn primary" data-x="ok">복사</button>
+    </div>`, ()=>{
+      navigator.clipboard.writeText(url).then(()=>{ toast('공유 링크를 복사했습니다'); closeModal(); });
+    });
+});
+
+/* ---- Settings (proxy) ---- */
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  openModal(`
+    <h3>설정</h3>
+    <div class="sub">브라우저 보안(CORS) 때문에 링크 점검과 공고 수집은 중계 서버가 있어야 정확히 동작합니다. 프록시 주소를 넣으면 즉시 활성화되고, 비워두면 제한 모드로 동작합니다.</div>
+    <div class="field"><label>프록시 URL 템플릿</label><input id="f_proxy" value="${esc(CFG.proxy||'')}" placeholder="https://my-proxy.example.com/fetch?url={url}">
+      <div class="hint">{url}에 대상 주소가 인코딩되어 들어갑니다. 사내 서버나 Cloudflare Workers 몇 줄이면 충분합니다.</div></div>
+    <div class="field"><label>최종 확인 표기</label><input id="f_verified" value="${esc(CFG.verified||'')}" placeholder="2026-09"></div>
+    <div class="field"><label class="check"><input type="checkbox" id="f_clearhits"> 클릭 통계 초기화</label></div>
+    <div class="modal-actions"><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="ok">저장</button></div>`,
+  ()=>{
+    CFG.proxy=val('f_proxy'); CFG.verified=val('f_verified'); saveCfg();
+    if(document.getElementById('f_clearhits').checked){ HITS={}; put(K_HITS,HITS); }
+    closeModal(); render(); toast('설정을 저장했습니다');
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('편집 내용·메모·클릭 통계를 모두 지우고 기본 목록으로 되돌릴까요?')) return;
+  DATA=structuredClone(DEFAULT_DATA); HITS={}; FEED={items:[],at:0};
+  save(); put(K_HITS,HITS); put(K_FEED,FEED); render(); toast('기본 목록으로 되돌렸습니다');
+});
+
+/* ---- Link check ---- */
+const via = url => CFG.proxy ? CFG.proxy.replace('{url}', encodeURIComponent(url)) : null;
+
+document.getElementById('checkBtn').addEventListener('click', async ()=>{
+  const items = allItems().map(r=>r.i);
+  const proxied = !!CFG.proxy;
+  toast(proxied ? `링크 ${items.length}건 점검 중…` : `제한 모드로 점검 중… (정확한 판정은 설정의 프록시 필요)`);
+  let bad=0, unknown=0;
+  await Promise.all(items.map(async it=>{
+    try{
+      if(proxied){
+        const r = await fetch(via(it.url), {signal:AbortSignal.timeout(15000)});
+        it.dead = !r.ok;
+        if(!r.ok) bad++;
+      }else{
+        await fetch(it.url,{mode:'no-cors',signal:AbortSignal.timeout(8000)});
+        it.dead=false; unknown++;
+      }
+    }catch(e){ it.dead=true; bad++; }
+  }));
+  CFG.verified = new Date().toISOString().slice(0,10); saveCfg();
+  save(); render();
+  toast(bad ? `${bad}건 응답 없음 — "확인필요" 표시` : (proxied?'모든 링크 정상':'응답 확인(정확도 제한)'));
+});
+
+/* ---- Feed collection ---- */
+function parseFeed(text, code, color){
+  const out=[];
+  // JSON feed?
+  try{
+    const j=JSON.parse(text);
+    const arr = Array.isArray(j) ? j : (j.items || j.list || j.data || []);
+    arr.forEach(o=>out.push({
+      title:o.title||o.subject||o.name||'(제목 없음)',
+      link:o.link||o.url||o.href||'#',
+      date:(o.date||o.pubDate||o.regDate||'').toString().slice(0,10), code, color
+    }));
+    if(out.length) return out;
+  }catch(e){}
+  // RSS / Atom
+  try{
+    const doc = new DOMParser().parseFromString(text,'text/xml');
+    doc.querySelectorAll('item, entry').forEach(n=>{
+      const link = n.querySelector('link')?.textContent?.trim() || n.querySelector('link')?.getAttribute('href') || '#';
+      out.push({
+        title:(n.querySelector('title')?.textContent||'(제목 없음)').trim(),
+        link,
+        date:(n.querySelector('pubDate,updated,published')?.textContent||'').slice(0,10), code, color
+      });
+    });
+  }catch(e){}
+  return out;
+}
+document.getElementById('feedBtn').addEventListener('click', async ()=>{
+  const withFeed = DATA.filter(a=>a.feed);
+  if(!withFeed.length) return toast('피드 URL이 설정된 기관이 없습니다 — 편집 모드에서 기관 수정 → 피드 URL 입력');
+  if(!CFG.proxy) return toast('공고 자동 수집에는 프록시가 필요합니다 — ⚙️ 설정에서 지정하세요');
+  toast('최신 공고를 가져오는 중…');
+  const all=[];
+  await Promise.all(withFeed.map(async a=>{
+    try{
+      const r = await fetch(via(a.feed), {signal:AbortSignal.timeout(20000)});
+      all.push(...parseFeed(await r.text(), a.code, a.color).slice(0,8));
+    }catch(e){}
+  }));
+  all.sort((x,y)=>(y.date||'').localeCompare(x.date||''));
+  FEED={items:all, at:Date.now()}; put(K_FEED,FEED); renderFeed();
+  toast(all.length?`공고 ${all.length}건을 가져왔습니다`:'가져온 공고가 없습니다 (피드 주소를 확인하세요)');
+});
+
+boot();
 </script>
 </body>
 </html>
