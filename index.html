@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>R&D 지원기관 링크 대시보드 | R&D Agency Link Dashboard</title>
-<meta name="description" content="KEIT · TIPA · KIAT · KOITA 주요 공고 및 자료 페이지 바로가기">
+<meta name="description" content="KEIT · TIPA · KIAT · KOITA · IRIS 주요 공고 및 자료 페이지 바로가기">
 <style>
   :root{
     --bg:#0d1117; --bg2:#111826; --card:#161d2b; --card2:#1c2434;
@@ -117,6 +117,11 @@
   .feed-add{border:1px solid var(--line);background:var(--bg2);color:var(--sub);border-radius:6px;padding:2px 8px;font-size:10.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:.13s}
   .feed-add:hover{border-color:var(--accent);color:var(--accent)}
   .feed-have{font-size:10.5px;color:var(--accent2);font-weight:700}
+  .st{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.2px}
+  .st-ing{background:rgba(79,140,255,.16);color:var(--accent)}
+  .st-pre{background:rgba(245,166,35,.16);color:var(--warn)}
+  .st-end{background:rgba(139,151,173,.14);color:var(--dim)}
+  .feed-org{font-size:10px;color:var(--dim)}
   .auto-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(34,211,167,.14);color:var(--accent2)}
   .feed-m{font-size:10.5px;color:var(--dim);margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
@@ -232,7 +237,7 @@
 
   <header>
     <h1>R&amp;D 지원기관 링크 대시보드
-      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT · KOITA</span>
+      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT · KOITA · IRIS</span>
     </h1>
     <div class="updated">최종 확인 <b id="verified">—</b><br>Last verified</div>
   </header>
@@ -342,6 +347,17 @@ const DEFAULT_DATA = [
       { name:"사업 정보 · Programs", domain:"kiat.or.kr", items:[
         {kr:"사업공고", en:"Business Announcements", url:"https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=90&MenuId=b159c9dac684471b87256f1e25404f5e", tag:"notice", quick:true},
         {kr:"사업안내", en:"Program Guide", url:"https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=81&MenuId=5b1f360bd3544901a0df8fc28970d36b", tag:"info"}
+      ]}
+    ]},
+  { code:"IRIS", color:"#7c5cff", kr:"범부처통합연구지원시스템",
+    en:"Integrated R&D Information System",
+    home:"https://www.iris.go.kr/main.do", feed:"",
+    groups:[
+      { name:"사업공고 · Announcements", domain:"iris.go.kr", items:[
+        {kr:"사업공고 (접수중·접수예정)", en:"Business Announcements", url:"https://www.iris.go.kr/contents/retrieveBsnsAncmBtinSituListView.do", tag:"notice", quick:true},
+        {kr:"공모예고", en:"Pre-announcements", url:"https://www.iris.go.kr/contents/retrieveAncmPrntcListView.do", tag:"notice"},
+        {kr:"사업설명회", en:"Briefing Sessions", url:"https://www.iris.go.kr/contents/retrieveBsnsDscrListView.do", tag:"info"},
+        {kr:"사업안내", en:"Program Guide", url:"https://www.iris.go.kr/contents/retrieveBsnsGuidListView.do", tag:"info"}
       ]}
     ]},
   { code:"KOITA", color:"#e05fc4", kr:"한국산업기술진흥협회",
@@ -563,18 +579,21 @@ function renderFeed(){
   p.hidden = false;
   document.getElementById('feedMeta').textContent = FEED.at ? new Date(FEED.at).toLocaleString('ko-KR')+' 기준' : '';
   const owned = new Set(allItems().map(r=>r.i.url));
-  document.getElementById('feedList').innerHTML = FEED.items.slice(0,30).map((f,idx)=>{
+  document.getElementById('feedList').innerHTML = FEED.items.slice(0,40).map((f,idx)=>{
     const d = f.due ? dday(f.due) : null;
     const have = owned.has(f.link);
+    const stc = f.status==='접수중' ? 'st-ing' : f.status==='접수예정' ? 'st-pre' : f.status ? 'st-end' : '';
+    const org = [f.ministry, f.org].filter(Boolean).join(' · ');
     return `<div class="feed-item">
       <a class="feed-link" href="${esc(f.link)}" target="_blank" rel="noopener noreferrer">
         <div class="feed-t">${esc(f.title)}</div>
+        ${org?`<div class="feed-org">${esc(org)}</div>`:''}
       </a>
       <div class="feed-m">
         <span style="color:${esc(f.color||'var(--dim)')};font-weight:700">${esc(f.agency||f.code||'')}</span>
-        <span>${esc(f.date||'')}</span>
+        ${f.status?`<span class="st ${stc}">${esc(f.status)}</span>`:''}
         ${d!==null?`<span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>`:''}
-        ${f.status?`<span>${esc(f.status)}</span>`:''}
+        <span>${esc(f.date||'')}</span>
         <span style="flex:1"></span>
         ${have?'<span class="feed-have">담김</span>'
               :`<button class="feed-add" data-act="feed-add" data-idx="${idx}" title="내 링크로 담기">+ 담기</button>`}
@@ -1007,7 +1026,10 @@ function parseFeed(text, code, color){
       link:  o.link || o.url || o.href || '#',
       date:  normDate(o.date || o.pubDate || o.regDate || ''),
       period: o.period || o.term || '',
-      status: o.status || '',
+      status: o.status || o.rcveStt || '',
+      ministry: o.ministry || '',
+      org: o.org || '',
+      dday: (typeof o.dday === 'number') ? o.dday : null,
       agency: o.agency || code,
       due, code, color
     });
@@ -1074,7 +1096,7 @@ function syncDueFromFeed(){
         kr: f.title, en:'', url: f.link, tag:'notice',
         due: f.due, autoDue:true, auto:true,
         tags:['자동수집'],
-        memo: (f.period?`접수기간 ${f.period}`:'') + (f.status?` · ${f.status}`:'')
+        memo: [f.period?`접수기간 ${f.period}`:'', f.status, [f.ministry,f.org].filter(Boolean).join(' · ')].filter(Boolean).join(' · ')
       });
       added++;
     }
@@ -1135,7 +1157,7 @@ document.getElementById('feedList').addEventListener('click', e=>{
   if(!g){ g={name:'자동 수집 공고 · Auto', domain:'', items:[]}; (a.groups=a.groups||[]).push(g); }
   if(g.items.some(i=>i.url===f.link)) return toast('이미 담긴 공고입니다');
   g.items.push({kr:f.title, en:'', url:f.link, tag:'notice', due:f.due||'', autoDue:!!f.due, auto:true,
-                tags:['자동수집'], memo:(f.period?`접수기간 ${f.period}`:'')});
+                tags:['자동수집'], memo:[f.period?`접수기간 ${f.period}`:'', f.status, [f.ministry,f.org].filter(Boolean).join(' · ')].filter(Boolean).join(' · ')});
   save(); render(); toast(f.due?`담았습니다 · ${ddayLabel(dday(f.due))}`:'담았습니다');
 });
 
