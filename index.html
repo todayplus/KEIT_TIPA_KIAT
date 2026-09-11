@@ -1083,17 +1083,33 @@ function syncDueFromFeed(){
   return {updated, added};
 }
 
+/* 피드 주소가 프록시(워커) 자신을 가리키면 중계 없이 바로 부릅니다.
+   워커는 자기 도메인을 허용 목록에 넣지 않으므로 감싸면 403이 납니다. */
+function proxyHost(){
+  try{ return new URL(CFG.proxy.replace('{url}','')).host; }catch(e){ return ''; }
+}
+function feedUrl(f){
+  try{
+    const h = new URL(f, location.href).host;
+    if(h === location.host || (proxyHost() && h === proxyHost())) return f;  // 직접 호출
+  }catch(e){}
+  return CFG.proxy ? via(f) : f;                                             // 그 외에는 중계
+}
+
 document.getElementById('feedBtn').addEventListener('click', async ()=>{
   const withFeed = DATA.filter(a=>a.feed);
   if(!withFeed.length) return toast('피드 URL이 설정된 기관이 없습니다 — 편집 모드에서 기관 수정 → 피드 URL 입력');
-  if(!CFG.proxy) return toast('공고 자동 수집에는 프록시가 필요합니다 — ⚙️ 설정에서 지정하세요');
   toast('최신 공고를 가져오는 중…');
-  const all=[]; let fail=0;
+  const all=[]; const errs=[];
   await Promise.all(withFeed.map(async a=>{
     try{
-      const r = await fetch(via(a.feed), {signal:AbortSignal.timeout(20000)});
-      all.push(...parseFeed(await r.text(), a.code, a.color).slice(0,12));
-    }catch(e){ fail++; }
+      const r = await fetch(feedUrl(a.feed), {signal:AbortSignal.timeout(30000)});
+      if(!r.ok){ errs.push(`${a.code} ${r.status}`); return; }
+      const txt = await r.text();
+      const got = parseFeed(txt, a.code, a.color).slice(0,12);
+      if(!got.length) errs.push(`${a.code} 응답에 공고 없음`);
+      all.push(...got);
+    }catch(e){ errs.push(`${a.code} ${e.name==='TimeoutError'?'시간초과':'연결실패'}`); }
   }));
   all.sort((x,y)=>(y.date||'').localeCompare(x.date||''));
   FEED={items:all, at:Date.now()}; put(K_FEED,FEED);
@@ -1103,7 +1119,7 @@ document.getElementById('feedBtn').addEventListener('click', async ()=>{
   parts.push(all.length?`공고 ${all.length}건`:'가져온 공고 없음');
   if(updated) parts.push(`마감일 ${updated}건 반영`);
   if(added)   parts.push(`링크 ${added}건 자동 등록`);
-  if(fail)    parts.push(`${fail}개 기관 실패`);
+  if(errs.length) parts.push(errs.join(', '));
   toast(parts.join(' · '));
 });
 
