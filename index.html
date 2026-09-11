@@ -116,6 +116,7 @@
   .feed-t{font-size:12.5px;font-weight:600;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .feed-add{border:1px solid var(--line);background:var(--bg2);color:var(--sub);border-radius:6px;padding:2px 8px;font-size:10.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:.13s}
   .feed-add:hover{border-color:var(--accent);color:var(--accent)}
+  .feed-add.del:hover{border-color:var(--danger);color:var(--danger)}
   .feed-have{font-size:10.5px;color:var(--accent2);font-weight:700}
   .st{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.2px}
   .st-ing{background:rgba(79,140,255,.16);color:var(--accent)}
@@ -227,6 +228,10 @@
     font-size:13px;font-weight:600;transition:.2s;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:90vw;text-align:center;
   }
   .toast.on{opacity:1;transform:translate(-50%,0)}
+  .toast.act{pointer-events:auto}
+  .toast .undo{margin-left:10px;border:1px solid var(--line);background:var(--bg2);color:var(--accent);
+    border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+  .toast .undo:hover{border-color:var(--accent)}
 
   @media(max-width:520px){.wrap{padding:22px 14px 44px}h1{font-size:21px}.iconbtn{opacity:.7}.row2{grid-template-columns:1fr}}
   @media print{.toolbar,.controls,.sortbar,.card-tools,.add-row,.iconbtn,.mask,.toast{display:none!important}body{background:#fff}}
@@ -254,6 +259,7 @@
     <button class="btn sm" id="checkBtn">🩺 링크 점검</button>
     <button class="btn sm" id="feedBtn">📰 공고 새로고침</button>
     <button class="btn sm" id="settingsBtn">⚙️ 설정</button>
+    <button class="btn sm danger" id="clearAuto">🗑 담은 공고 비우기</button>
     <button class="btn sm danger" id="resetBtn">↺ 초기화</button>
   </div>
 
@@ -369,7 +375,7 @@ const DEFAULT_DATA = [
       ]}
     ]}
 ];
-const DEFAULT_CFG = { proxy:"", theme:"auto", sort:"manual", verified:"", syncDue:true, autoAdd:false, autoAddDays:60 };
+const DEFAULT_CFG = { proxy:"", theme:"auto", sort:"manual", verified:"", syncDue:true, autoAdd:false, autoAddDays:60, dismissed:[] };
 
 const TAGLABEL = { notice:"공고 NOTICE", doc:"자료 DOC", info:"안내 INFO" };
 const K_DATA='rnd-dash-v3-data', K_CFG='rnd-dash-v3-cfg', K_HITS='rnd-dash-v3-hits', K_FEED='rnd-dash-v3-feed';
@@ -396,8 +402,26 @@ const saveCfg = () => put(K_CFG, CFG);
 
 function toast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('on');
+  t.innerHTML=esc(msg); t.classList.remove('act'); t.classList.add('on');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2600);
+}
+let UNDO=null;
+function dismiss(url){ CFG.dismissed=[...new Set([...(CFG.dismissed||[]), url])].slice(-500); saveCfg(); }
+function undismiss(url){ CFG.dismissed=(CFG.dismissed||[]).filter(u=>u!==url); saveCfg(); }
+function toastUndo(msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=`${esc(msg)} <button class="undo" id="undoBtn">되돌리기</button>`;
+  t.classList.add('on','act');
+  clearTimeout(t._t); t._t=setTimeout(()=>{ t.classList.remove('on','act'); UNDO=null; },6000);
+  document.getElementById('undoBtn').onclick=()=>{
+    if(!UNDO) return;
+    const {ai,gi,ii,item}=UNDO;
+    const a = DATA[ai];
+    let g = (a && a.groups[gi]) ? a.groups[gi] : (a ? autoGroup(a) : null);
+    if(g){ g.items.splice(Math.min(ii,g.items.length),0,item); }
+    undismiss(item.url);
+    UNDO=null; save(); render(); toast('복구했습니다');
+  };
 }
 
 /* ---- 아이템 고유 키 (클릭 통계용) ---- */
@@ -482,7 +506,7 @@ function itemHTML(ref){
       <span class="item-kr">${esc(i.kr)}
         <span class="tag t-${esc(i.tag)}">${TAGLABEL[i.tag]||esc(i.tag)}</span>
         ${d!==null?`<span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>`:''}
-        ${i.autoDue?'<span class="auto-badge" title="피드에서 자동 반영된 마감일">자동</span>':''}
+        ${i.auto?'<span class="auto-badge" title="공고 패널에서 담은 항목">담음</span>':(i.autoDue?'<span class="auto-badge" title="피드에서 자동 반영된 마감일">자동</span>':'')}
         ${i.dead?'<span class="tag t-dead">확인필요</span>':''}
       </span>
       ${i.en?`<span class="item-en">${esc(i.en)}</span>`:''}
@@ -493,7 +517,7 @@ function itemHTML(ref){
     <button class="iconbtn star ${i.quick?'on':''}" data-act="star" title="즐겨찾기">${I.star}</button>
     <button class="iconbtn copy" data-act="copy" title="URL 복사" data-url="${esc(i.url)}">${I.copy}</button>
     <button class="iconbtn edit-only" data-act="edit-item" title="수정">${I.edit}</button>
-    <button class="iconbtn edit-only del" data-act="del-item" title="삭제">${I.del}</button>
+    <button class="iconbtn del ${i.auto?'':'edit-only'}" data-act="del-item" title="${i.auto?'담은 공고 삭제':'삭제'}">${I.del}</button>
     ${I.out}
   </a>`;
 }
@@ -595,7 +619,7 @@ function renderFeed(){
         ${d!==null?`<span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>`:''}
         <span>${esc(f.date||'')}</span>
         <span style="flex:1"></span>
-        ${have?'<span class="feed-have">담김</span>'
+        ${have?`<span class="feed-have">담김</span><button class="feed-add del" data-act="feed-del" data-url="${esc(f.link)}" title="담은 항목에서 빼기">− 빼기</button>`
               :`<button class="feed-add" data-act="feed-add" data-idx="${idx}" title="내 링크로 담기">+ 담기</button>`}
       </div>
     </div>`;
@@ -726,7 +750,18 @@ document.getElementById('grid').addEventListener('click', e=>{
       const ref=DATA[ai].groups[gi].items[ii];
       if(act==='star'){ ref.quick=!ref.quick; save(); render(); return; }
       if(act==='edit-item'){ itemForm('링크 수정', ref, v=>Object.assign(ref,v)); return; }
-      if(act==='del-item'){ if(confirm(`"${ref.kr}" 링크를 삭제할까요?`)){ DATA[ai].groups[gi].items.splice(ii,1); save(); render(); } return; }
+      if(act==='del-item'){
+        if(ref.auto){                                  // 담은 공고 — 확인 없이 삭제하고 되돌리기 제공
+          const removed = DATA[ai].groups[gi].items.splice(ii,1)[0];
+          UNDO = {ai:+ai, gi:+gi, ii:+ii, item:removed};
+          dismiss(removed.url);
+          save(); render();
+          toastUndo(`"${removed.kr.slice(0,20)}${removed.kr.length>20?'…':''}" 삭제`);
+        } else if(confirm(`"${ref.kr}" 링크를 삭제할까요?`)){
+          DATA[ai].groups[gi].items.splice(ii,1); save(); render();
+        }
+        return;
+      }
       if(act==='drag-item') return;
     }
     e.preventDefault(); e.stopPropagation();
@@ -955,10 +990,8 @@ document.getElementById('settingsBtn').addEventListener('click', ()=>{
     saveCfg();
     if(document.getElementById('f_clearhits').checked){ HITS={}; put(K_HITS,HITS); }
     if(document.getElementById('f_clearauto').checked){
-      DATA.forEach(a=>{
-        (a.groups||[]).forEach(g=>{ g.items=(g.items||[]).filter(i=>!i.auto); });
-        a.groups=(a.groups||[]).filter(g=>g.name!=='자동 수집 공고 · Auto'||g.items.length);
-      });
+      DATA.forEach(a=>{ (a.groups||[]).forEach(g=>{ g.items=(g.items||[]).filter(i=>!i.auto); }); });
+      pruneAutoGroups();
       allItems().forEach(r=>{ if(r.i.autoDue){ delete r.i.due; delete r.i.autoDue; } });
       save();
     }
@@ -1089,8 +1122,8 @@ function syncDueFromFeed(){
       if(d===null || d < 0 || d > (CFG.autoAddDays||60)) return;
       const a = DATA.find(x=>x.code===(f.agency||f.code)) || DATA.find(x=>x.code===f.code);
       if(!a) return;
-      let g = (a.groups||[]).find(x=>x.name==='자동 수집 공고 · Auto');
-      if(!g){ g={name:'자동 수집 공고 · Auto', domain:'', items:[]}; (a.groups=a.groups||[]).push(g); }
+      if((CFG.dismissed||[]).includes(f.link)) return;   // 사용자가 뺀 공고는 다시 담지 않음
+      const g = autoGroup(a);
       if(g.items.some(i=>i.url===f.link)) return;
       g.items.push({
         kr: f.title, en:'', url: f.link, tag:'notice',
@@ -1145,20 +1178,64 @@ document.getElementById('feedBtn').addEventListener('click', async ()=>{
   toast(parts.join(' · '));
 });
 
-/* 피드 항목을 내 링크로 직접 담기 */
-document.getElementById('feedList').addEventListener('click', e=>{
-  const b = e.target.closest('[data-act="feed-add"]');
-  if(!b) return;
-  e.preventDefault(); e.stopPropagation();
-  const f = FEED.items[+b.dataset.idx]; if(!f) return;
-  const a = DATA.find(x=>x.code===(f.agency||f.code));
-  if(!a) return toast('해당 기관 카드가 없습니다');
+/* 피드 항목 담기 / 빼기 */
+function autoGroup(a){
   let g = (a.groups||[]).find(x=>x.name==='자동 수집 공고 · Auto');
   if(!g){ g={name:'자동 수집 공고 · Auto', domain:'', items:[]}; (a.groups=a.groups||[]).push(g); }
-  if(g.items.some(i=>i.url===f.link)) return toast('이미 담긴 공고입니다');
-  g.items.push({kr:f.title, en:'', url:f.link, tag:'notice', due:f.due||'', autoDue:!!f.due, auto:true,
-                tags:['자동수집'], memo:[f.period?`접수기간 ${f.period}`:'', f.status, [f.ministry,f.org].filter(Boolean).join(' · ')].filter(Boolean).join(' · ')});
-  save(); render(); toast(f.due?`담았습니다 · ${ddayLabel(dday(f.due))}`:'담았습니다');
+  return g;
+}
+/* 빈 '자동 수집 공고' 그룹은 정리 */
+function pruneAutoGroups(){
+  DATA.forEach(a=>{
+    a.groups=(a.groups||[]).filter(g=>g.name!=='자동 수집 공고 · Auto' || (g.items||[]).length);
+  });
+}
+function removeByUrl(url){
+  for(let ai=0; ai<DATA.length; ai++){
+    const gs=DATA[ai].groups||[];
+    for(let gi=0; gi<gs.length; gi++){
+      const ii=(gs[gi].items||[]).findIndex(i=>i.url===url);
+      if(ii>=0){ const item=gs[gi].items.splice(ii,1)[0]; return {ai,gi,ii,item}; }
+    }
+  }
+  return null;
+}
+
+document.getElementById('feedList').addEventListener('click', e=>{
+  const b = e.target.closest('[data-act]');
+  if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+
+  if(b.dataset.act==='feed-del'){
+    const r = removeByUrl(b.dataset.url);
+    if(!r) return toast('담긴 항목을 찾지 못했습니다');
+    UNDO = r; dismiss(b.dataset.url); pruneAutoGroups(); save(); render();
+    toastUndo(`"${r.item.kr.slice(0,20)}${r.item.kr.length>20?'…':''}" 빼기 완료`);
+    return;
+  }
+
+  if(b.dataset.act==='feed-add'){
+    const f = FEED.items[+b.dataset.idx]; if(!f) return;
+    const a = DATA.find(x=>x.code===(f.agency||f.code));
+    if(!a) return toast('해당 기관 카드가 없습니다');
+    const g = autoGroup(a);
+    if(g.items.some(i=>i.url===f.link)) return toast('이미 담긴 공고입니다');
+    undismiss(f.link);
+    g.items.push({kr:f.title, en:'', url:f.link, tag:'notice', due:f.due||'', autoDue:!!f.due, auto:true,
+                  tags:['자동수집'],
+                  memo:[f.period?`접수기간 ${f.period}`:'', f.status, [f.ministry,f.org].filter(Boolean).join(' · ')].filter(Boolean).join(' · ')});
+    save(); render(); toast(f.due?`담았습니다 · ${ddayLabel(dday(f.due))}`:'담았습니다');
+  }
+});
+
+/* 담은 공고 일괄 비우기 */
+document.getElementById('clearAuto').addEventListener('click', ()=>{
+  const n = allItems().filter(r=>r.i.auto).length;
+  if(!n) return toast('담은 공고가 없습니다');
+  if(!confirm(`담은 공고 ${n}건을 모두 비울까요? (개별 삭제는 목록의 휴지통 버튼)`)) return;
+  allItems().filter(r=>r.i.auto).forEach(r=>dismiss(r.i.url));
+  DATA.forEach(a=>(a.groups||[]).forEach(g=>{ g.items=(g.items||[]).filter(i=>!i.auto); }));
+  pruneAutoGroups(); save(); render(); toast(`${n}건을 비웠습니다`);
 });
 
 boot();
