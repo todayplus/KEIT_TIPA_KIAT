@@ -112,8 +112,13 @@
   .feed-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
   .feed-item{display:block;padding:10px 12px;border-radius:9px;background:var(--card2);text-decoration:none;color:inherit;transition:.13s;border:1px solid transparent}
   .feed-item:hover{border-color:var(--accent)}
+  .feed-link{text-decoration:none;color:inherit;display:block}
   .feed-t{font-size:12.5px;font-weight:600;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .feed-m{font-size:10.5px;color:var(--dim);margin-top:5px;display:flex;gap:8px}
+  .feed-add{border:1px solid var(--line);background:var(--bg2);color:var(--sub);border-radius:6px;padding:2px 8px;font-size:10.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:.13s}
+  .feed-add:hover{border-color:var(--accent);color:var(--accent)}
+  .feed-have{font-size:10.5px;color:var(--accent2);font-weight:700}
+  .auto-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(34,211,167,.14);color:var(--accent2)}
+  .feed-m{font-size:10.5px;color:var(--dim);margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:20px;align-items:start}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:.2s}
@@ -348,7 +353,7 @@ const DEFAULT_DATA = [
       ]}
     ]}
 ];
-const DEFAULT_CFG = { proxy:"", theme:"auto", sort:"manual", verified:"" };
+const DEFAULT_CFG = { proxy:"", theme:"auto", sort:"manual", verified:"", syncDue:true, autoAdd:false, autoAddDays:60 };
 
 const TAGLABEL = { notice:"공고 NOTICE", doc:"자료 DOC", info:"안내 INFO" };
 const K_DATA='rnd-dash-v3-data', K_CFG='rnd-dash-v3-cfg', K_HITS='rnd-dash-v3-hits', K_FEED='rnd-dash-v3-feed';
@@ -422,7 +427,7 @@ function boot(){
       history.replaceState(null,'',location.pathname+location.search);
       render();
     }).catch(()=>{ toast('공유 링크를 해석하지 못했습니다'); render(); });
-  } else render();
+  } else { if(FEED.items && FEED.items.length) syncDueFromFeed(); render(); }
 }
 
 /* ============ Render ============ */
@@ -461,6 +466,7 @@ function itemHTML(ref){
       <span class="item-kr">${esc(i.kr)}
         <span class="tag t-${esc(i.tag)}">${TAGLABEL[i.tag]||esc(i.tag)}</span>
         ${d!==null?`<span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>`:''}
+        ${i.autoDue?'<span class="auto-badge" title="피드에서 자동 반영된 마감일">자동</span>':''}
         ${i.dead?'<span class="tag t-dead">확인필요</span>':''}
       </span>
       ${i.en?`<span class="item-en">${esc(i.en)}</span>`:''}
@@ -556,11 +562,25 @@ function renderFeed(){
   if(!FEED.items || !FEED.items.length){ p.hidden = true; return; }
   p.hidden = false;
   document.getElementById('feedMeta').textContent = FEED.at ? new Date(FEED.at).toLocaleString('ko-KR')+' 기준' : '';
-  document.getElementById('feedList').innerHTML = FEED.items.slice(0,24).map(f=>`
-    <a class="feed-item" href="${esc(f.link)}" target="_blank" rel="noopener noreferrer">
-      <div class="feed-t">${esc(f.title)}</div>
-      <div class="feed-m"><span style="color:${esc(f.color||'var(--dim)')}">${esc(f.code||'')}</span><span>${esc(f.date||'')}</span></div>
-    </a>`).join('');
+  const owned = new Set(allItems().map(r=>r.i.url));
+  document.getElementById('feedList').innerHTML = FEED.items.slice(0,30).map((f,idx)=>{
+    const d = f.due ? dday(f.due) : null;
+    const have = owned.has(f.link);
+    return `<div class="feed-item">
+      <a class="feed-link" href="${esc(f.link)}" target="_blank" rel="noopener noreferrer">
+        <div class="feed-t">${esc(f.title)}</div>
+      </a>
+      <div class="feed-m">
+        <span style="color:${esc(f.color||'var(--dim)')};font-weight:700">${esc(f.agency||f.code||'')}</span>
+        <span>${esc(f.date||'')}</span>
+        ${d!==null?`<span class="dday ${ddayClass(d)}">${ddayLabel(d)}</span>`:''}
+        ${f.status?`<span>${esc(f.status)}</span>`:''}
+        <span style="flex:1"></span>
+        ${have?'<span class="feed-have">담김</span>'
+              :`<button class="feed-add" data-act="feed-add" data-idx="${idx}" title="내 링크로 담기">+ 담기</button>`}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ============ Filter ============ */
@@ -623,7 +643,8 @@ function itemForm(title, it, cb){
           <option value="doc"${it.tag==='doc'?' selected':''}>자료 DOC</option>
           <option value="info"${it.tag==='info'?' selected':''}>안내 INFO</option>
         </select></div>
-      <div class="field"><label>마감일 (D-day 표시)</label><input id="f_due" type="date" value="${esc(it.due||'')}"></div>
+      <div class="field"><label>마감일 (D-day 표시)</label><input id="f_due" type="date" value="${esc(it.due||'')}">
+        <div class="hint">${it.autoDue?'현재 피드에서 자동 반영된 값입니다. 직접 고치면 이후 자동 갱신 대상에서 제외됩니다.':'직접 입력한 마감일은 자동 갱신되지 않습니다.'}</div></div>
     </div>
     <div class="field"><label>사용자 태그 (쉼표 구분)</label><input id="f_tags" value="${esc((it.tags||[]).join(', '))}" placeholder="예: 해당가능, 김대리, 2026상반기"><div class="hint">태그는 상단 필터 칩으로 자동 추가됩니다.</div></div>
     <div class="field"><label>메모</label><textarea id="f_memo" placeholder="우리 회사 해당 여부, 담당자, 준비서류 등">${esc(it.memo||'')}</textarea></div>
@@ -633,7 +654,9 @@ function itemForm(title, it, cb){
     const kr=val('f_kr'), url=val('f_url');
     if(!kr||!url) return toast('이름과 URL은 필수입니다');
     if(!/^https?:\/\//i.test(url)) return toast('URL은 http(s):// 로 시작해야 합니다');
-    cb({kr, en:val('f_en'), url, tag:val('f_tag'), due:val('f_due'),
+    const newDue = val('f_due');
+    const keepAuto = it.autoDue && newDue === (it.due||'');
+    cb({kr, en:val('f_en'), url, tag:val('f_tag'), due:newDue, autoDue: keepAuto,
         tags: val('f_tags').split(',').map(s=>s.trim()).filter(Boolean),
         memo: document.getElementById('f_memo').value.trim(),
         quick: document.getElementById('f_quick').checked});
@@ -893,11 +916,33 @@ document.getElementById('settingsBtn').addEventListener('click', ()=>{
     <div class="field"><label>프록시 URL 템플릿</label><input id="f_proxy" value="${esc(CFG.proxy||'')}" placeholder="https://my-proxy.example.com/fetch?url={url}">
       <div class="hint">{url}에 대상 주소가 인코딩되어 들어갑니다. 사내 서버나 Cloudflare Workers 몇 줄이면 충분합니다.</div></div>
     <div class="field"><label>최종 확인 표기</label><input id="f_verified" value="${esc(CFG.verified||'')}" placeholder="2026-09"></div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:18px 0">
+    <div class="field"><label>공고 마감일 자동 연동</label>
+      <label class="check"><input type="checkbox" id="f_syncdue"${CFG.syncDue?' checked':''}> 피드의 접수마감일을 내 링크 D-day에 자동 반영</label>
+      <div class="hint">URL이 같거나 제목이 일치하는 링크의 마감일을 갱신합니다. 직접 입력한 마감일은 덮어쓰지 않습니다.</div></div>
+    <div class="field">
+      <label class="check"><input type="checkbox" id="f_autoadd"${CFG.autoAdd?' checked':''}> 목록에 없는 공고도 "자동 수집 공고" 그룹으로 등록</label>
+      <div class="hint">기관 카드 안에 그룹이 자동 생성되고 #자동수집 태그가 붙습니다.</div></div>
+    <div class="field"><label>자동 등록 기준 (마감까지 남은 일수 이내)</label><input id="f_autodays" type="number" min="1" max="365" value="${esc(CFG.autoAddDays||60)}"></div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:18px 0">
     <div class="field"><label class="check"><input type="checkbox" id="f_clearhits"> 클릭 통계 초기화</label></div>
+    <div class="field"><label class="check"><input type="checkbox" id="f_clearauto"> 자동 수집된 링크·마감일 모두 제거</label></div>
     <div class="modal-actions"><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="ok">저장</button></div>`,
   ()=>{
-    CFG.proxy=val('f_proxy'); CFG.verified=val('f_verified'); saveCfg();
+    CFG.proxy=val('f_proxy'); CFG.verified=val('f_verified');
+    CFG.syncDue=document.getElementById('f_syncdue').checked;
+    CFG.autoAdd=document.getElementById('f_autoadd').checked;
+    CFG.autoAddDays=Math.max(1, parseInt(val('f_autodays'),10)||60);
+    saveCfg();
     if(document.getElementById('f_clearhits').checked){ HITS={}; put(K_HITS,HITS); }
+    if(document.getElementById('f_clearauto').checked){
+      DATA.forEach(a=>{
+        (a.groups||[]).forEach(g=>{ g.items=(g.items||[]).filter(i=>!i.auto); });
+        a.groups=(a.groups||[]).filter(g=>g.name!=='자동 수집 공고 · Auto'||g.items.length);
+      });
+      allItems().forEach(r=>{ if(r.i.autoDue){ delete r.i.due; delete r.i.autoDue; } });
+      save();
+    }
     closeModal(); render(); toast('설정을 저장했습니다');
   });
 });
@@ -934,48 +979,148 @@ document.getElementById('checkBtn').addEventListener('click', async ()=>{
 });
 
 /* ---- Feed collection ---- */
+const DATE_RE = /(\d{4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/;
+function normDate(v){
+  if(!v) return '';
+  const m = DATE_RE.exec(String(v));
+  if(!m) return '';
+  return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+}
+/* 접수기간 문자열 / due 필드에서 마감일(끝 날짜) 추출 */
+function extractDue(o){
+  if(o.due) { const d=normDate(o.due); if(d) return d; }
+  const src = [o.period, o.term, o.rcptPd, o.applyPeriod, o.deadline, o.endDate, o.title]
+    .filter(Boolean).join(' ');
+  const all = [];
+  const re = /(\d{4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/g;
+  let m; while((m = re.exec(src))) all.push(`${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`);
+  if(!all.length) return '';
+  return all.sort().pop();   // 가장 늦은 날짜 = 접수 마감일
+}
+
 function parseFeed(text, code, color){
   const out=[];
-  // JSON feed?
+  const push = o => {
+    const due = extractDue(o);
+    out.push({
+      title: o.title || o.subject || o.name || '(제목 없음)',
+      link:  o.link || o.url || o.href || '#',
+      date:  normDate(o.date || o.pubDate || o.regDate || ''),
+      period: o.period || o.term || '',
+      status: o.status || '',
+      agency: o.agency || code,
+      due, code, color
+    });
+  };
+  // JSON feed
   try{
-    const j=JSON.parse(text);
+    const j = JSON.parse(text);
     const arr = Array.isArray(j) ? j : (j.items || j.list || j.data || []);
-    arr.forEach(o=>out.push({
-      title:o.title||o.subject||o.name||'(제목 없음)',
-      link:o.link||o.url||o.href||'#',
-      date:(o.date||o.pubDate||o.regDate||'').toString().slice(0,10), code, color
-    }));
+    arr.forEach(push);
     if(out.length) return out;
   }catch(e){}
   // RSS / Atom
   try{
     const doc = new DOMParser().parseFromString(text,'text/xml');
     doc.querySelectorAll('item, entry').forEach(n=>{
-      const link = n.querySelector('link')?.textContent?.trim() || n.querySelector('link')?.getAttribute('href') || '#';
-      out.push({
-        title:(n.querySelector('title')?.textContent||'(제목 없음)').trim(),
-        link,
-        date:(n.querySelector('pubDate,updated,published')?.textContent||'').slice(0,10), code, color
+      const l = n.querySelector('link');
+      push({
+        title: (n.querySelector('title')?.textContent||'').trim(),
+        link:  l?.textContent?.trim() || l?.getAttribute('href') || '#',
+        date:  (n.querySelector('pubDate,updated,published')?.textContent||''),
+        period:(n.querySelector('description,summary')?.textContent||'').slice(0,300)
       });
     });
   }catch(e){}
   return out;
 }
+
+/* ---- 피드 마감일 → 대시보드 링크 D-day 자동 반영 ---- */
+const norm = t => String(t||'').replace(/\s|[\[\]()·,]/g,'').toLowerCase();
+function syncDueFromFeed(){
+  if(!CFG.syncDue) return {updated:0, added:0};
+  let updated=0, added=0;
+  const refs = allItems();
+
+  FEED.items.forEach(f=>{
+    if(!f.due) return;
+    // 1) 같은 URL의 기존 링크
+    let hit = refs.find(r=>r.i.url===f.link);
+    // 2) 제목이 링크 이름/메모에 담긴 경우 (수동 등록해 둔 공고)
+    if(!hit){
+      const nf = norm(f.title);
+      hit = refs.find(r=>{
+        const nk = norm(r.i.kr);
+        return nk.length>6 && (nf.includes(nk) || nk.includes(nf));
+      });
+    }
+    if(hit){
+      if(hit.i.due !== f.due || hit.i.autoDue !== true){
+        // 사람이 직접 넣은 마감일은 건드리지 않음 (autoDue 표식이 있을 때만 갱신)
+        if(!hit.i.due || hit.i.autoDue){ hit.i.due = f.due; hit.i.autoDue = true; updated++; }
+      }
+      return;
+    }
+    // 3) 없으면 옵션에 따라 새 링크로 등록
+    if(CFG.autoAdd){
+      const d = dday(f.due);
+      if(d===null || d < 0 || d > (CFG.autoAddDays||60)) return;
+      const a = DATA.find(x=>x.code===(f.agency||f.code)) || DATA.find(x=>x.code===f.code);
+      if(!a) return;
+      let g = (a.groups||[]).find(x=>x.name==='자동 수집 공고 · Auto');
+      if(!g){ g={name:'자동 수집 공고 · Auto', domain:'', items:[]}; (a.groups=a.groups||[]).push(g); }
+      if(g.items.some(i=>i.url===f.link)) return;
+      g.items.push({
+        kr: f.title, en:'', url: f.link, tag:'notice',
+        due: f.due, autoDue:true, auto:true,
+        tags:['자동수집'],
+        memo: (f.period?`접수기간 ${f.period}`:'') + (f.status?` · ${f.status}`:'')
+      });
+      added++;
+    }
+  });
+  if(updated||added){ save(); }
+  return {updated, added};
+}
+
 document.getElementById('feedBtn').addEventListener('click', async ()=>{
   const withFeed = DATA.filter(a=>a.feed);
   if(!withFeed.length) return toast('피드 URL이 설정된 기관이 없습니다 — 편집 모드에서 기관 수정 → 피드 URL 입력');
   if(!CFG.proxy) return toast('공고 자동 수집에는 프록시가 필요합니다 — ⚙️ 설정에서 지정하세요');
   toast('최신 공고를 가져오는 중…');
-  const all=[];
+  const all=[]; let fail=0;
   await Promise.all(withFeed.map(async a=>{
     try{
       const r = await fetch(via(a.feed), {signal:AbortSignal.timeout(20000)});
-      all.push(...parseFeed(await r.text(), a.code, a.color).slice(0,8));
-    }catch(e){}
+      all.push(...parseFeed(await r.text(), a.code, a.color).slice(0,12));
+    }catch(e){ fail++; }
   }));
   all.sort((x,y)=>(y.date||'').localeCompare(x.date||''));
-  FEED={items:all, at:Date.now()}; put(K_FEED,FEED); renderFeed();
-  toast(all.length?`공고 ${all.length}건을 가져왔습니다`:'가져온 공고가 없습니다 (피드 주소를 확인하세요)');
+  FEED={items:all, at:Date.now()}; put(K_FEED,FEED);
+  const {updated, added} = syncDueFromFeed();
+  render();
+  const parts=[];
+  parts.push(all.length?`공고 ${all.length}건`:'가져온 공고 없음');
+  if(updated) parts.push(`마감일 ${updated}건 반영`);
+  if(added)   parts.push(`링크 ${added}건 자동 등록`);
+  if(fail)    parts.push(`${fail}개 기관 실패`);
+  toast(parts.join(' · '));
+});
+
+/* 피드 항목을 내 링크로 직접 담기 */
+document.getElementById('feedList').addEventListener('click', e=>{
+  const b = e.target.closest('[data-act="feed-add"]');
+  if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const f = FEED.items[+b.dataset.idx]; if(!f) return;
+  const a = DATA.find(x=>x.code===(f.agency||f.code));
+  if(!a) return toast('해당 기관 카드가 없습니다');
+  let g = (a.groups||[]).find(x=>x.name==='자동 수집 공고 · Auto');
+  if(!g){ g={name:'자동 수집 공고 · Auto', domain:'', items:[]}; (a.groups=a.groups||[]).push(g); }
+  if(g.items.some(i=>i.url===f.link)) return toast('이미 담긴 공고입니다');
+  g.items.push({kr:f.title, en:'', url:f.link, tag:'notice', due:f.due||'', autoDue:!!f.due, auto:true,
+                tags:['자동수집'], memo:(f.period?`접수기간 ${f.period}`:'')});
+  save(); render(); toast(f.due?`담았습니다 · ${ddayLabel(dday(f.due))}`:'담았습니다');
 });
 
 boot();
