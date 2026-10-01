@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>R&D 지원기관 링크 대시보드 | R&D Agency Link Dashboard</title>
-<meta name="description" content="KEIT · TIPA · KIAT · KOITA · IRIS 주요 공고 및 자료 페이지 바로가기">
+<meta name="description" content="KEIT · TIPA · KIAT · KOITA · IRIS · KITIA 주요 공고 및 자료 페이지 바로가기">
 <style>
   :root{
     --bg:#0d1117; --bg2:#111826; --card:#161d2b; --card2:#1c2434;
@@ -242,7 +242,7 @@
 
   <header>
     <h1>R&amp;D 지원기관 링크 대시보드
-      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT · KOITA · IRIS</span>
+      <span>R&amp;D Agency Link Dashboard · KEIT · TIPA · KIAT · KOITA · IRIS · KITIA</span>
     </h1>
     <div class="updated">최종 확인 <b id="verified">—</b><br>Last verified</div>
   </header>
@@ -373,6 +373,22 @@ const DEFAULT_DATA = [
       { name:"국가R&D 정보 · Gov R&D", domain:"koita.or.kr", items:[
         {kr:"국가R&D 사업공고", en:"Government R&D Announcements", url:"https://www.koita.or.kr/board/commBoardGovRnDList.do", tag:"notice", quick:true}
       ]}
+    ]},
+  { code:"KITIA", color:"#14b8a6", kr:"한국소재부품장비투자기관협의회",
+    en:"Korea Core Industrial Technology Investment Association",
+    home:"https://www.kitia.or.kr/", feed:"https://soft-glade-215e.wjk0219.workers.dev/feed?src=kitia&limit=20",
+    groups:[
+      { name:"알림마당 · Notices", domain:"kitia.or.kr", items:[
+        {kr:"사업공고", en:"Business Announcements", url:"https://www.kitia.or.kr/news.php?type=%EC%82%AC%EC%97%85%EA%B3%B5%EA%B3%A0", tag:"notice", quick:true},
+        {kr:"공지사항", en:"Notices", url:"https://www.kitia.or.kr/news.php", tag:"info"},
+        {kr:"주요일정", en:"Schedule", url:"https://www.kitia.or.kr/schedule.php", tag:"info"}
+      ]},
+      { name:"사업안내 · Programs", domain:"kitia.or.kr", items:[
+        {kr:"투자연계형 R&D사업", en:"Investment-linked R&D", url:"https://www.kitia.or.kr/apply1.php", tag:"info"},
+        {kr:"소재부품장비 투자유치 지원사업", en:"Investment Attraction Support", url:"https://www.kitia.or.kr/apply2.php", tag:"info"},
+        {kr:"투자연계형 기술확보지원사업", en:"Technology Acquisition Support", url:"https://www.kitia.or.kr/apply3.php", tag:"info"},
+        {kr:"글로벌기술도입지원사업(X&D)", en:"Global Technology Acquisition (X&D)", url:"https://www.kitia.or.kr/apply4.php", tag:"info"}
+      ]}
     ]}
 ];
 const DEFAULT_CFG = { proxy:"", theme:"auto", sort:"manual", verified:"", syncDue:true, autoAdd:false, autoAddDays:60, dismissed:[] };
@@ -455,6 +471,15 @@ function boot(){
   const hash = location.hash;
   DATA = j(K_DATA, DEFAULT_DATA);
   CFG  = Object.assign(structuredClone(DEFAULT_CFG), j(K_CFG, DEFAULT_CFG));
+  // 새로 추가된 기본 기관을 기존 저장 목록에 한 번만 합칩니다(사용자가 지운 뒤 다시 생기지 않도록 기록)
+  CFG.seeded = CFG.seeded || DATA.map(a=>a.code);
+  DEFAULT_DATA.forEach(d=>{
+    if(!CFG.seeded.includes(d.code)){
+      if(!DATA.some(a=>a.code===d.code)) DATA.push(structuredClone(d));
+      CFG.seeded.push(d.code);
+    }
+  });
+  put(K_DATA, DATA); put(K_CFG, CFG);
   HITS = j(K_HITS, {});
   FEED = j(K_FEED, {items:[], at:0});
   applyTheme();

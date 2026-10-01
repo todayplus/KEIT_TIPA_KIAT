@@ -1,6 +1,6 @@
 # R&D 지원기관 링크 대시보드
 
-KEIT · TIPA · KIAT · KOITA 네 기관의 공고·서식 페이지를 한 화면에 모으고,
+KEIT · TIPA · KIAT · KOITA · IRIS 다섯 기관의 공고·서식 페이지를 한 화면에 모으고,
 각 기관 공고를 자동으로 수집해 접수 마감일을 D-day로 보여주는 단일 HTML 대시보드.
 
 - 서비스: <https://todayplus.github.io/KEIT_TIPA_KIAT/>
@@ -73,6 +73,18 @@ https://www.kiat.or.kr/rss.do    → 404
 - 피드가 준 마감일을 대시보드 링크의 D-day에 자동 반영
 - 피드 항목 "+ 담기" 버튼, 자동 반영값에 "자동" 배지
 
+### v7 — 담은 공고 개별 삭제
+담은 공고에 휴지통 버튼 상시 노출(편집 모드 불필요), 6초 되돌리기 토스트,
+공고 패널의 "− 빼기" 토글, 툴바 "담은 공고 비우기".
+뺀 공고 URL은 `cfg.dismissed`에 남겨 자동 등록이 되살리지 못하게 한다(되돌리기 시 해제).
+
+### v8(워커) — IRIS 페이지네이션 수정
+접수중 2페이지 이후가 누락되던 문제 수정. 상태는 응답의 `rcveStt`(진행중/예정/완료)로 판정하도록 변경.
+
+### v6 — IRIS 추가
+범부처통합연구지원시스템(IRIS) 카드와 수집기 추가. 접수중·접수예정 상태 배지,
+정부부처·전문기관명 표시. IRIS는 JSON API라 마감일과 D-day가 정확하다.
+
 ### v5 — 이중 프록시 버그 수정
 피드 주소를 항상 프록시로 감싸다 보니 **워커가 자기 자신을 호출**했고,
 워커의 도메인 화이트리스트에 자기 도메인이 없어 403으로 거절 → 수집 0건.
@@ -91,12 +103,15 @@ https://www.kiat.or.kr/rss.do    → 404
 | TIPA | `smtech.go.kr/front/ifg/no/notice02_list.do` | `table.tbl_base` | `notice02_detail.do` (jsessionid 제거 필요) | 목록의 접수기간 |
 | KIAT | `kiat.or.kr/front/board/boardContentsListAjax.do` (**POST**) | Ajax 응답 HTML | `contentsView('id')` → `boardContentsView.do` | 목록의 접수기간 |
 | KOITA | `koita.or.kr/board/commBoardGovRnDList.do` | 일반 테이블 | `page_move(...{no:N})` → `commBoardGovRnDView.do?no=N` | **상세 본문 파싱** |
+| IRIS | `iris.go.kr/contents/retrieveBsnsAncmBtinSituList.do` (**POST, JSON**) | JSON API | `retrieveBsnsAncmView.do?ancmId=&ancmPrg=` | API가 `rcveEndDe`·`dDay` 직접 제공 |
 
 주의할 점 몇 가지.
 
 - **KIAT**: 목록이 Ajax로 그려져 페이지 HTML에는 공고가 없다. Ajax 엔드포인트를 직접 POST하면 세션 없이도 응답한다.
 - **TIPA**: 링크에 `;jsessionid=...`가 박혀 나온다. 제거하지 않으면 나중에 만료된다.
   `javascript:goMove()`인 행은 IRIS로 이관된 공고라 `iris.go.kr`로 연결한다.
+- **IRIS 페이지네이션(중요)**: 응답은 **페이지당 10건 고정**이다. `recordCountPerPage`를 키워도 서버가 무시한다. 1페이지만 읽으면 접수중 공고가 조용히 누락된다(실제로 v6에서 8건이 빠졌다). 접수중은 페이지를 순회해 전건 확보하고, 접수예정·마감은 과거 건이 수천 건 쌓여 있어(접수예정 5,535건) 앞쪽만 읽고 `마감일 유효 + 미래` 조건으로 걸러낸다. 접수예정 조회는 IRIS 서버가 페이지당 12초쯤 걸린다.
+- **IRIS**: 유일하게 JSON API를 제공한다. `ancmPrg`로 상태를 고른다 — `ancmIng`(접수중) / `ancmPre`(접수예정) / `ancmEnd`(마감). 마감일과 D-day를 서버가 주므로 파싱 추정이 없다. 단 접수예정 목록에 기관 내부 테스트 공고가 섞여 있어 걸러낸다. 범부처 통합 시스템이라 KEIT·TIPA 공고와 상당히 겹친다.
 - **KOITA**: 목록에 접수기간 칸이 아예 없다. 상세 페이지를 열어야 하고,
   본문이 NTIS·IRIS `<iframe>`인 공고가 많아 그 페이지까지 한 단계 더 따라간다.
 
@@ -106,7 +121,7 @@ https://www.kiat.or.kr/rss.do    → 404
 3. `'26. 2. 4(수) ~ 3. 6(금)`처럼 종료일 연도가 생략된 경우 시작 연도로 보정 (역전 시 +1년)
 4. 못 찾으면 **빈 값**. 추측하지 않는다.
 
-현재 추출률: KEIT 6/6 · KIAT 6/6 · TIPA 6/6 · KOITA 5/8
+현재 추출률: IRIS 22/22 · KEIT 6/6 · KIAT 6/6 · TIPA 6/6 · KOITA 5/8
 (KOITA 나머지 3건은 본문에 접수기간 문구 자체가 없는 공고)
 
 ---
@@ -114,7 +129,7 @@ https://www.kiat.or.kr/rss.do    → 404
 ## 4. 워커 API
 
 ```
-GET /feed?src=keit|smtech|kiat|koita|all&limit=15&detail=1
+GET /feed?src=keit|smtech|kiat|koita|iris|kitia|all&limit=15&detail=1&stt=ing,pre
 GET /?url=<encoded-url>          링크 점검용 CORS 중계
 GET /                            사용법 안내
 ```
@@ -137,6 +152,7 @@ GET /                            사용법 안내
 ```
 
 - `due`가 대시보드 D-day에 그대로 쓰인다.
+- `stt`은 IRIS 전용. `ing`(접수중) / `pre`(접수예정) / `end`(마감) / `all`, 기본값 `ing,pre`.
 - `detail=0`을 붙이면 KOITA 상세 조회를 건너뛴다. 0.7초로 끝나지만 마감일은 비게 된다(기본 6~7초).
 - 응답은 10분 캐시. 일부 기관만 실패하면 `errors` 필드에 사유가 담긴다.
 
@@ -178,6 +194,8 @@ https://soft-glade-215e.wjk0219.workers.dev/?url={url}
 | TIPA | `.../feed?src=smtech` |
 | KIAT | `.../feed?src=kiat` |
 | KOITA | `.../feed?src=koita` |
+| IRIS | `.../feed?src=iris` |
+| KITIA | `.../feed?src=kitia&limit=20` (v8부터 기본값으로 들어 있음) |
 
 ---
 
@@ -186,12 +204,14 @@ https://soft-glade-215e.wjk0219.workers.dev/?url={url}
 | 키 | 내용 |
 |---|---|
 | `rnd-dash-v3-data` | 기관·그룹·링크 목록 (편집 결과) |
-| `rnd-dash-v3-cfg` | 프록시 주소, 테마, 정렬, 자동 연동 옵션 |
+| `rnd-dash-v3-cfg` | 프록시 주소, 테마, 정렬, 자동 연동 옵션, 뺀 공고 목록(`dismissed`) |
 | `rnd-dash-v3-hits` | 링크별 클릭 수·최근 클릭 시각 |
 | `rnd-dash-v3-feed` | 마지막으로 수집한 공고 목록 |
 
 서버에 저장되는 것은 없다. 브라우저를 바꾸거나 동료에게 넘길 때는
 **내보내기 JSON** 또는 **공유 링크**를 쓴다.
+
+담은 공고에는 `auto: true`가 붙어 직접 등록한 링크와 구분된다. 일괄 정리·개별 삭제 모두 이 플래그를 기준으로 한다.
 
 마감일에는 `autoDue` 표식이 있다. 자동 반영된 값에만 붙으며,
 사람이 직접 입력하거나 수정한 마감일은 이후 자동 갱신 대상에서 빠진다.
@@ -204,6 +224,7 @@ https://soft-glade-215e.wjk0219.workers.dev/?url={url}
 |---|---|
 | 공고가 0건 | 워커 주소 + `/feed?src=all`을 브라우저로 직접 열어 `errors` 확인 |
 | 특정 기관만 0건 | 그 기관이 페이지 구조를 바꿨을 가능성. 파서 수정 필요 |
+| 있어야 할 공고가 빠짐 | 페이지네이션 누락 의심. 기관 사이트의 총 건수와 수집 건수를 비교 |
 | CORS 오류 | 워커의 `ORIGIN` 값이 현재 사이트 주소와 다름 |
 | 수정했는데 그대로 | Ctrl+Shift+R |
 | 워커 되돌리기 | Cloudflare → 해당 워커 → Deployments → Rollback |
@@ -219,3 +240,16 @@ https://soft-glade-215e.wjk0219.workers.dev/?url={url}
 - 파서 상태 자동 점검 (일정 기간 0건이면 알림)
 - 마감 임박 공고 이메일/메신저 알림
 - 다중 사용자 공유 (현재는 브라우저 단위 저장)
+
+
+### v8 — KITIA(한국소재부품장비투자기관협의회) 사업공고 추가 (2026-10-01)
+- 목록: `POST https://www.kitia.or.kr/ajax/news.php` `lang=kor&page=N&flag=news&type=사업공고` → JSON
+  `description.data[]` (idx, title, describe, reg), 페이지당 10건, `last_yn`.
+- ⚠ 목록 상단 슬라이더의 최신·추천 공고는 이 API에 **없다**(예: 「공급망안정화 지원사업 3차」).
+  → 워커가 `news.php` HTML의 `data-idx` 슬라이더도 읽고, 빠진 건은 상세 페이지에서 등록일을 보충.
+- 상세: `/news_detail.php?idx=N&type=사업공고`.
+- 마감일: 본문이 대부분 포스터 이미지라 텍스트 접수기간이 드물다.
+  ① 본문 `findDue` → ② `모집 기간:` 라벨 → ③ 제목의 `(~7/31)`, `(~12/19, 금)` 순으로만 추출, 없으면 비움(추측 금지).
+- KITIA API가 느림(페이지당 3~6초) → 기본 2~3페이지만 병렬 요청.
+- 대시보드: 기본 기관에 KITIA 추가(피드 URL 기본 입력). 기존 사용자 저장 목록에는 `CFG.seeded`로
+  **한 번만** 합침 — 사용자 편집 유지, 사용자가 지운 기관은 다시 생기지 않음.
